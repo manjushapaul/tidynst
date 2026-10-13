@@ -5,7 +5,9 @@ import { listPublishedGuides } from "@/server/public-content";
 import { HeroArt } from "@/components/site/hero-art";
 import { SectionHeading } from "@/components/site/section-heading";
 import { ButtonLink } from "@/components/ui/button";
+import { JsonLd } from "@/components/seo/json-ld";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/structured-data";
 import { site } from "@/lib/site";
 
 export const metadata = pageMetadata({
@@ -34,6 +36,7 @@ export default async function HomePage() {
   const latest = await listPublishedGuides(await publicDb(), { limit: 6 });
   return (
     <>
+      <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
       <section className="overflow-hidden border-b border-line bg-gradient-to-b from-sand/80 to-canvas">
         <div className="container-page grid items-center gap-14 py-16 sm:py-20 lg:grid-cols-[1.2fr_1fr] lg:py-24">
           <div>

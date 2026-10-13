@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StaticPage } from "@/components/site/static-page";
+import { analyticsMeasurementId } from "@/lib/analytics";
 import { pageMetadata } from "@/lib/seo/metadata";
 import { site } from "@/lib/site";
 
@@ -11,6 +12,7 @@ export const metadata = pageMetadata({
 });
 
 export default function PrivacyPage() {
+  const analyticsOn = analyticsMeasurementId() !== null;
   return (
     <StaticPage
       title="Privacy policy"
@@ -31,16 +33,34 @@ export default function PrivacyPage() {
       </p>
 
       <h2>Cookies</h2>
-      <p>
-        Reading the site does not set any cookies. The only cookies we use are strictly necessary cookies for
-        members of the {site.name} team who sign in to the editorial dashboard.
-      </p>
+      {analyticsOn ? (
+        <p>
+          We use Google Analytics cookies to understand how readers use the site, as described below. The only
+          other cookies we use are strictly necessary cookies for members of the {site.name} team who sign in
+          to the editorial dashboard.
+        </p>
+      ) : (
+        <p>
+          Reading the site does not set any cookies. The only cookies we use are strictly necessary cookies
+          for members of the {site.name} team who sign in to the editorial dashboard.
+        </p>
+      )}
 
       <h2>Analytics</h2>
-      <p>
-        We do not currently use analytics or advertising tools. If we decide to add analytics in the future,
-        we will update this policy before doing so and explain what is collected and why.
-      </p>
+      {analyticsOn ? (
+        <p>
+          We use Google Analytics to measure which pages are read and how visitors find them, so we can
+          improve our guides. Google Analytics collects information such as pages visited, approximate
+          location, device and browser type, and uses cookies to do so. We do not send Google your name, email
+          address or any other information that directly identifies you. Google&apos;s use of this data is
+          described in <a href="https://policies.google.com/privacy">Google&apos;s privacy policy</a>.
+        </p>
+      ) : (
+        <p>
+          We do not currently use analytics or advertising tools. If we decide to add analytics in the future,
+          we will update this policy before doing so and explain what is collected and why.
+        </p>
+      )}
 
       <h2>Emails you send us</h2>
       <p>

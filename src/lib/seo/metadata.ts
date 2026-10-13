@@ -26,8 +26,11 @@ export function robotsFor(noindex: boolean | undefined): Metadata["robots"] {
     : { index: false, follow: true };
 }
 
+export const DEFAULT_OG_IMAGE = { url: "/og/default", width: 1200, height: 630, alt: site.name };
+
 export function pageMetadata(input: PageMetadataInput): Metadata {
   const url = absoluteUrl(input.path);
+  const images = input.openGraph?.images ?? [DEFAULT_OG_IMAGE];
   return {
     title: input.absoluteTitle ? { absolute: input.title } : input.title,
     description: input.description,
@@ -42,8 +45,13 @@ export function pageMetadata(input: PageMetadataInput): Metadata {
       locale: site.locale,
       ...(input.openGraph?.publishedTime ? { publishedTime: input.openGraph.publishedTime } : {}),
       ...(input.openGraph?.modifiedTime ? { modifiedTime: input.openGraph.modifiedTime } : {}),
-      ...(input.openGraph?.images ? { images: input.openGraph.images } : {}),
+      images,
     },
-    twitter: { card: "summary_large_image", title: input.title, description: input.description },
+    twitter: {
+      card: "summary_large_image",
+      title: input.title,
+      description: input.description,
+      images: images.map((image) => image.url),
+    },
   };
 }

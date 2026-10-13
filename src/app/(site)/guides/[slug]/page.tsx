@@ -10,7 +10,9 @@ import { TableOfContents } from "@/components/site/table-of-contents";
 import { categoryPath, getCategory } from "@/content/categories";
 import { extractHeadings } from "@/lib/content/markdown";
 import { formatDate } from "@/lib/format";
+import { JsonLd } from "@/components/seo/json-ld";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { articleJsonLd } from "@/lib/seo/structured-data";
 import { site } from "@/lib/site";
 import { publicDb, loadPublishedGuide } from "@/server/loaders";
 import { relatedGuides } from "@/server/public-content";
@@ -64,6 +66,17 @@ export default async function GuidePage({ params }: Props) {
 
   return (
     <article>
+      <JsonLd
+        data={articleJsonLd({
+          title: guide.title,
+          description: guide.seoDescription ?? guide.excerpt,
+          path: `/guides/${guide.slug}`,
+          datePublished: guide.firstPublishedAt,
+          dateModified: guide.updatedAt,
+          image: guide.image,
+          section: category?.name,
+        })}
+      />
       <header className="border-b border-line bg-gradient-to-b from-sand/70 to-canvas">
         <div className="container-page pt-8 pb-10 sm:pb-14">
           <Breadcrumbs items={crumbs} />

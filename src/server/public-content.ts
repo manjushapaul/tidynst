@@ -259,11 +259,23 @@ export async function searchPublishedGuides(db: Db, query: string, limit = 20): 
   return rows.map(toSummary);
 }
 
-export type SitemapGuide = { slug: string; category: CategorySlug | null; updatedAt: Date };
+export type SitemapGuide = {
+  slug: string;
+  category: CategorySlug | null;
+  topicSlugs: string[];
+  updatedAt: Date;
+};
 
 export async function listSitemapGuides(db: Db): Promise<SitemapGuide[]> {
   const rows = await db
-    .select({ slug: guideRevisions.slug, category: guideRevisions.category, updatedAt: guides.publishedAt })
+    .select({
+      slug: guideRevisions.slug,
+      category: guideRevisions.category,
+      topicSlugs: sql<
+        string[]
+      >`coalesce((select array_agg(t.slug order by t.slug) from topics t where t.id = any(${guideRevisions.topicIds})), '{}')`,
+      updatedAt: guides.publishedAt,
+    })
     .from(guides)
     .innerJoin(guideRevisions, eq(guides.publishedRevisionId, guideRevisions.id))
     .orderBy(desc(guides.publishedAt));

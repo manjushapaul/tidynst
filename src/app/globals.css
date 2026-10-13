@@ -1,0 +1,228 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #faf7f2;
+  --color-surface: #ffffff;
+  --color-ink: #1f1e1c;
+  --color-muted: #5c5751;
+  --color-sage: #5f6f52;
+  --color-sage-deep: #4a5840;
+  --color-sage-pale: #e8ece2;
+  --color-line: #e7e1d7;
+  --color-line-strong: #d6cec1;
+  --color-sand: #f2ede4;
+  --color-danger: #9b2c22;
+  --color-danger-pale: #f8e9e6;
+  --color-warning: #7a5a12;
+  --color-warning-pale: #f7f0dc;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 2px rgb(31 30 28 / 0.04), 0 8px 24px -12px rgb(31 30 28 / 0.12);
+  --shadow-card-hover: 0 2px 4px rgb(31 30 28 / 0.05), 0 18px 40px -18px rgb(31 30 28 / 0.22);
+
+  --ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-sage-pale);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-sage);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility container-page {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+
+  @media (width >= 40rem) {
+    padding-inline: 2rem;
+  }
+}
+
+@utility container-prose {
+  width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-sage);
+}
+
+/* Long-form guide body. Rendered from Markdown, so it styles plain elements. */
+@utility prose-tn {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--color-ink);
+
+  & > * + * {
+    margin-top: 1.25em;
+  }
+
+  & h2 {
+    margin-top: 2.25em;
+    font-size: 1.625rem;
+    line-height: 1.25;
+    scroll-margin-top: 6rem;
+  }
+
+  & h3 {
+    margin-top: 1.75em;
+    font-size: 1.25rem;
+    line-height: 1.35;
+    scroll-margin-top: 6rem;
+  }
+
+  & h2 + *,
+  & h3 + * {
+    margin-top: 0.75em;
+  }
+
+  & a {
+    color: var(--color-sage-deep);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  & a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  & strong {
+    font-weight: 600;
+  }
+
+  & ul,
+  & ol {
+    padding-left: 1.4em;
+  }
+
+  & ul {
+    list-style: disc;
+  }
+
+  & ol {
+    list-style: decimal;
+  }
+
+  & li + li {
+    margin-top: 0.4em;
+  }
+
+  & li::marker {
+    color: var(--color-sage);
+  }
+
+  & blockquote {
+    border-left: 3px solid var(--color-sage);
+    padding-left: 1.1em;
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
+  & hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+    margin-block: 2.5em;
+  }
+
+  & code {
+    font-size: 0.9em;
+    background: var(--color-sand);
+    border-radius: 0.3em;
+    padding: 0.1em 0.35em;
+  }
+
+  & pre {
+    overflow-x: auto;
+    background: var(--color-sand);
+    border-radius: 0.75rem;
+    padding: 1em 1.25em;
+  }
+
+  & pre code {
+    background: none;
+    padding: 0;
+  }
+
+  & table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.95em;
+  }
+
+  & th,
+  & td {
+    border-bottom: 1px solid var(--color-line);
+    padding: 0.6em 0.8em;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  & th {
+    font-weight: 600;
+    background: var(--color-sand);
+  }
+
+  & img {
+    border-radius: 0.75rem;
+    max-width: 100%;
+    height: auto;
+  }
+}

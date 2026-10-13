@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { affiliateLinksEnabled } from "@/lib/affiliate";
 import { site } from "@/lib/site";
 import { Logo } from "./logo";
 import { companyNav, legalNav, primaryNav } from "./navigation";
@@ -43,7 +44,11 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} {site.name}. Independent editorial content.
           </p>
-          <p>We do not earn commission from links on this site at present.</p>
+          <p>
+            {affiliateLinksEnabled()
+              ? "Some guides contain affiliate links, which are always labelled."
+              : "We do not earn commission from links on this site at present."}
+          </p>
         </div>
       </div>
     </footer>

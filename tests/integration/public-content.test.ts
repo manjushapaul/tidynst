@@ -1,0 +1,157 @@
+import { eq } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { guides, products, topics } from "@/db/schema";
+import {
+  countPublishedGuides,
+  getPublishedGuide,
+  listPublishedGuides,
+  listSitemapGuides,
+  listTopics,
+  normaliseSearchQuery,
+  relatedGuides,
+  searchPublishedGuides,
+} from "@/server/public-content";
+import { createTestDb, type TestDb } from "../support/test-db";
+import { insertGuide, insertUser } from "../support/seed";
+
+let t: TestDb;
+let noDrillId: string;
+
+beforeAll(async () => {
+  t = await createTestDb();
+  const user = await insertUser(t.db);
+  const [topic] = await t.db.select().from(topics).where(eq(topics.slug, "no-drill"));
+  noDrillId = topic!.id;
+
+  const [product] = await t.db
+    .insert(products)
+    .values([
+      {
+        slug: "active-rack",
+        name: "Active rack",
+        summary: "S",
+        status: "active",
+        verifiedOn: "2026-10-01",
+        createdBy: user.id,
+        updatedBy: user.id,
+      },
+      { slug: "draft-rack", name: "Draft rack", summary: "S", createdBy: user.id, updatedBy: user.id },
+    ])
+    .returning();
+  const [, draftProduct] = await t.db.select().from(products).orderBy(products.slug);
+
+  await insertGuide(
+    t.db,
+    user.id,
+    {
+      slug: "kitchen-spice-storage",
+      title: "Spice storage for small kitchens",
+      topicIds: [noDrillId],
+      products: [
+        { productId: product!.id, note: "Fits a narrow shelf." },
+        { productId: draftProduct!.id, note: null },
+      ],
+    },
+    { published: true, publishedAt: new Date("2026-10-01T00:00:00Z") },
+  );
+  await insertGuide(
+    t.db,
+    user.id,
+    {
+      slug: "kitchen-cabinet-order",
+      title: "Bringing order to kitchen cabinets",
+      body: "## Cabinets\n\nShelf risers and labelled containers.",
+    },
+    { published: true, publishedAt: new Date("2026-10-05T00:00:00Z") },
+  );
+  await insertGuide(
+    t.db,
+    user.id,
+    { slug: "bathroom-hooks", title: "Hooks for a wet bathroom", category: "bathroom" },
+    {
+      published: true,
+      publishedAt: new Date("2026-10-03T00:00:00Z"),
+    },
+  );
+  await insertGuide(t.db, user.id, {
+    slug: "secret-draft",
+    title: "An unpublished kitchen draft about spices",
+  });
+});
+
+afterAll(async () => {
+  await t.close();
+});
+
+describe("public content queries", () => {
+  it("lists only published guides, newest first", async () => {
+    const list = await listPublishedGuides(t.db, { limit: 10 });
+    expect(list.map((guide) => guide.slug)).toEqual([
+      "kitchen-cabinet-order",
+      "bathroom-hooks",
+      "kitchen-spice-storage",
+    ]);
+    expect(await countPublishedGuides(t.db)).toBe(3);
+  });
+
+  it("filters by category and topic", async () => {
+    expect((await listPublishedGuides(t.db, { category: "kitchen", limit: 10 })).map((g) => g.slug)).toEqual([
+      "kitchen-cabinet-order",
+      "kitchen-spice-storage",
+    ]);
+    expect((await listPublishedGuides(t.db, { topicId: noDrillId, limit: 10 })).map((g) => g.slug)).toEqual([
+      "kitchen-spice-storage",
+    ]);
+    expect(await countPublishedGuides(t.db, { category: "renters" })).toBe(0);
+  });
+
+  it("never returns drafts by slug, in search or in the sitemap", async () => {
+    expect(await getPublishedGuide(t.db, "secret-draft")).toBeNull();
+    expect((await searchPublishedGuides(t.db, "unpublished")).length).toBe(0);
+    expect((await listSitemapGuides(t.db)).map((g) => g.slug)).not.toContain("secret-draft");
+  });
+
+  it("serves the published revision, not later unpublished edits to the working copy", async () => {
+    await t.db
+      .update(guides)
+      .set({ title: "Edited but not published" })
+      .where(eq(guides.slug, "kitchen-spice-storage"));
+    const guide = await getPublishedGuide(t.db, "kitchen-spice-storage");
+    expect(guide?.title).toBe("Spice storage for small kitchens");
+  });
+
+  it("includes only active products, in the recommended order, and the guide's topics", async () => {
+    const guide = await getPublishedGuide(t.db, "kitchen-spice-storage");
+    expect(guide?.products.map((p) => [p.name, p.note])).toEqual([["Active rack", "Fits a narrow shelf."]]);
+    expect(guide?.topics.map((topic) => topic.slug)).toEqual(["no-drill"]);
+  });
+
+  it("finds published guides with English full-text search, ranking title matches first", async () => {
+    const results = await searchPublishedGuides(t.db, "cabinets");
+    expect(results[0]?.slug).toBe("kitchen-cabinet-order");
+    expect(await searchPublishedGuides(t.db, "spice OR hooks")).toHaveLength(2);
+  });
+
+  it("relates guides in the same category first", async () => {
+    const guide = await getPublishedGuide(t.db, "kitchen-spice-storage");
+    const related = await relatedGuides(t.db, guide!);
+    expect(related.map((g) => g.slug)).toEqual(["kitchen-cabinet-order"]);
+  });
+
+  it("counts published guides per topic", async () => {
+    const counts = Object.fromEntries(
+      (await listTopics(t.db)).map((topic) => [topic.slug, topic.guideCount]),
+    );
+    expect(counts["no-drill"]).toBe(1);
+    expect(counts["budget"]).toBe(0);
+  });
+});
+
+describe("search query normalisation", () => {
+  it("trims, collapses whitespace, bounds length and rejects tiny queries", () => {
+    expect(normaliseSearchQuery("  spice   racks ")).toBe("spice racks");
+    expect(normaliseSearchQuery("a")).toBeNull();
+    expect(normaliseSearchQuery(["x"])).toBeNull();
+    expect(normaliseSearchQuery("x".repeat(500))?.length).toBe(100);
+  });
+});

@@ -1,4 +1,7 @@
 import { CategoryGrid } from "@/components/site/category-grid";
+import { EmptyState, GuideGrid } from "@/components/site/guide-card";
+import { publicDb } from "@/server/loaders";
+import { listPublishedGuides } from "@/server/public-content";
 import { HeroArt } from "@/components/site/hero-art";
 import { SectionHeading } from "@/components/site/section-heading";
 import { ButtonLink } from "@/components/ui/button";
@@ -27,7 +30,8 @@ const principles = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const latest = await listPublishedGuides(await publicDb(), { limit: 6 });
   return (
     <>
       <section className="overflow-hidden border-b border-line bg-gradient-to-b from-sand/80 to-canvas">
@@ -60,6 +64,24 @@ export default function HomePage() {
         />
         <div className="mt-10">
           <CategoryGrid />
+        </div>
+      </section>
+
+      <section aria-labelledby="latest-heading" className="container-page pb-16 sm:pb-20">
+        <SectionHeading
+          id="latest-heading"
+          eyebrow="Fresh from the editors"
+          title="Latest guides"
+          action={latest.length ? { href: "/guides", label: "All guides" } : undefined}
+        />
+        <div className="mt-10">
+          {latest.length ? (
+            <GuideGrid guides={latest} />
+          ) : (
+            <EmptyState title="Our first guides are on their way">
+              Every guide is written and reviewed before it is published. Check back soon.
+            </EmptyState>
+          )}
         </div>
       </section>
 

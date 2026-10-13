@@ -131,6 +131,10 @@
     margin-top: 0.75em;
   }
 
+  & > :first-child {
+    margin-top: 0;
+  }
+
   & a {
     color: var(--color-sage-deep);
     text-decoration: underline;

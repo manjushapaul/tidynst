@@ -9,6 +9,12 @@ function normaliseSiteUrl(raw: string | undefined): string {
   return url.origin;
 }
 
+function normaliseEmail(raw: string | undefined): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value : null;
+}
+
 export const site = {
   name: "TidyNest",
   tagline: "Calm, practical organising for small Indian homes",
@@ -18,6 +24,7 @@ export const site = {
   locale: "en_IN",
   language: "en-IN",
   editorialName: "TidyNest Editorial",
+  contactEmail: normaliseEmail(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
 } as const;
 
 export function absoluteUrl(path: string): string {

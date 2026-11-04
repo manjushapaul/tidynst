@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { CATEGORY_SLUGS, categories, categoryPath, getCategory, isCategorySlug } from "@/content/categories";
+import {
+  CATEGORY_SLUGS,
+  categories,
+  categoryPath,
+  getCategory,
+  guidePath,
+  isCategorySlug,
+} from "@/content/categories";
 import { isActivePath, primaryNav } from "@/components/site/navigation";
 
 describe("categories", () => {
@@ -12,6 +19,14 @@ describe("categories", () => {
       "renters",
     ]);
     expect(CATEGORY_SLUGS).toHaveLength(5);
+  });
+
+  it("places articles under their category, falling back to /guides for uncategorised drafts", () => {
+    expect(guidePath({ category: "small-apartments", slug: "test" })).toBe(
+      "/categories/small-apartments/test",
+    );
+    expect(guidePath({ category: null, slug: "draft" })).toBe("/guides/draft");
+    expect(isActivePath(guidePath({ category: "kitchen", slug: "a" }), categoryPath("kitchen"))).toBe(true);
   });
 
   it("does not turn topics into categories", () => {
@@ -37,9 +52,8 @@ describe("categories", () => {
 });
 
 describe("navigation", () => {
-  it("links every category from the primary navigation", () => {
-    const hrefs = primaryNav.map((item) => item.href);
-    for (const slug of CATEGORY_SLUGS) expect(hrefs).toContain(`/categories/${slug}`);
+  it("links exactly the categories from the primary navigation", () => {
+    expect(primaryNav.map((item) => item.href)).toEqual(CATEGORY_SLUGS.map((slug) => `/categories/${slug}`));
   });
 
   it("matches active paths on segment boundaries only", () => {

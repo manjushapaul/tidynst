@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
-import { companyNav, isActivePath, primaryNav } from "./navigation";
+import { isActivePath, type NavItem } from "./navigation";
 
-export function MobileNav() {
+export function MobileNav({ items }: { items: readonly NavItem[] }) {
   const [open, setOpen] = useState(false);
   const [openedAt, setOpenedAt] = useState<string | null>(null);
   const pathname = usePathname();
@@ -41,7 +41,7 @@ export function MobileNav() {
           setOpenedAt(pathname);
           setOpen((value) => !value);
         }}
-        className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-sage-pale"
+        className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-oak-pale"
       >
         <span className="sr-only">{open ? "Close menu" : "Open menu"}</span>
         <svg
@@ -66,7 +66,7 @@ export function MobileNav() {
       >
         <nav aria-label="Mobile" className="container-page py-4">
           <ul className="grid gap-1">
-            {[...primaryNav, { href: "/search", label: "Search" }, ...companyNav].map((item) => {
+            {items.map((item) => {
               const active = isActivePath(pathname, item.href);
               return (
                 <li key={item.href}>
@@ -75,7 +75,7 @@ export function MobileNav() {
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "block rounded-xl px-3 py-3 text-base",
-                      active ? "bg-sage-pale text-sage-deep" : "text-ink hover:bg-sand",
+                      active ? "bg-oak-pale text-oak-deep" : "text-ink hover:bg-sand",
                     )}
                   >
                     {item.label}

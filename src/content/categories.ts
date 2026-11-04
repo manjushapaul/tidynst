@@ -111,3 +111,16 @@ export function isCategorySlug(value: string): value is CategorySlug {
 export function categoryPath(slug: CategorySlug): string {
   return `/categories/${slug}`;
 }
+
+/** Public address of a subcategory listing. The same shape as an article address; articles win if both exist. */
+export function subcategoryPath(category: CategorySlug, slug: string): string {
+  return `${categoryPath(category)}/${slug}`;
+}
+
+/**
+ * Public address of an article. Publishing requires a category, so `/guides/…` is only used for
+ * draft previews; the `/guides/[slug]` route redirects published articles to their category address.
+ */
+export function guidePath(guide: { category: CategorySlug | null; slug: string }): string {
+  return guide.category ? `${categoryPath(guide.category)}/${guide.slug}` : `/guides/${guide.slug}`;
+}

@@ -5,7 +5,7 @@ import { isIndexingEnabled } from "./indexing";
 type PageMetadataInput = {
   title: string;
   description: string;
-  /** Canonical path, e.g. `/guides/foo`. Always without query string. */
+  /** Canonical path, e.g. `/categories/kitchen/foo`. Always without query string. */
   path: string;
   /** Page-level opt-out, e.g. search results or empty collections. */
   noindex?: boolean;
@@ -28,13 +28,33 @@ export function robotsFor(noindex: boolean | undefined): Metadata["robots"] {
 
 export const DEFAULT_OG_IMAGE = { url: "/og/default", width: 1200, height: 630, alt: site.name };
 
+export const FEED_PATH = "/feed.xml";
+
+/**
+ * Generated share card for a guide without a featured image. The version changes whenever the guide
+ * is republished, so social networks that cache images by URL pick up a new title.
+ */
+export function guideShareImage(guide: { slug: string; title: string; updatedAt: Date }) {
+  return {
+    src: `/og/guide/${encodeURIComponent(guide.slug)}?v=${guide.updatedAt.getTime()}`,
+    width: 1200,
+    height: 630,
+    alt: guide.title,
+  };
+}
+
 export function pageMetadata(input: PageMetadataInput): Metadata {
   const url = absoluteUrl(input.path);
   const images = input.openGraph?.images ?? [DEFAULT_OG_IMAGE];
   return {
     title: input.absoluteTitle ? { absolute: input.title } : input.title,
     description: input.description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+      ...(isIndexingEnabled()
+        ? { types: { "application/rss+xml": [{ url: FEED_PATH, title: `${site.name} guides` }] } }
+        : {}),
+    },
     robots: robotsFor(input.noindex),
     openGraph: {
       type: input.openGraph?.type ?? "website",

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { affiliateLinksEnabled } from "@/lib/affiliate";
-import { site } from "@/lib/site";
+import { categoryPath } from "@/content/categories";
+import { loadPublicSite } from "@/server/loaders";
 import { Logo } from "./logo";
-import { companyNav, legalNav, primaryNav } from "./navigation";
+import { companyNav, legalNav } from "./navigation";
 
 function FooterColumn({
   title,
@@ -27,22 +28,27 @@ function FooterColumn({
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const home = await loadPublicSite();
+  const explore = home.categories.map((category) => ({
+    href: categoryPath(category.slug),
+    label: category.navLabel,
+  }));
   return (
-    <footer className="mt-auto border-t border-line bg-sand/60">
+    <footer className="mt-auto border-t border-line">
       <div className="container-page grid gap-12 py-14 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div className="max-w-xs">
-          <Logo />
-          <p className="mt-4 text-sm leading-relaxed text-muted">{site.tagline}.</p>
+          <Logo name={home.name} image={home.logo} />
+          <p className="mt-4 text-sm leading-relaxed text-muted">{home.tagline.replace(/[. ]+$/, "")}.</p>
         </div>
-        <FooterColumn title="Explore" items={primaryNav} />
-        <FooterColumn title="TidyNest" items={companyNav} />
+        <FooterColumn title="Explore" items={explore} />
+        <FooterColumn title={home.name} items={companyNav} />
         <FooterColumn title="Policies" items={legalNav} />
       </div>
       <div className="border-t border-line">
         <div className="container-page flex flex-col gap-2 py-6 text-xs text-muted sm:flex-row sm:justify-between">
           <p>
-            © {new Date().getFullYear()} {site.name}. Independent editorial content.
+            © {new Date().getFullYear()} {home.name}. {home.footerNote}
           </p>
           <p>
             {affiliateLinksEnabled()

@@ -6,7 +6,7 @@ import { audit } from "@/server/audit";
 import { requestMeta, requireAction, setSessionCookie } from "@/server/auth/request";
 import { revokeOwnSession, revokeUserSessions } from "@/server/auth/sessions";
 import { getDb } from "@/server/db";
-import { changeOwnPassword, UserInputError } from "@/server/users";
+import { changeOwnEmail, changeOwnPassword, UserInputError } from "@/server/users";
 
 export async function changePasswordAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
   try {
@@ -27,6 +27,27 @@ export async function changePasswordAction(_previous: ActionState, formData: For
     await setSessionCookie(fresh.token, fresh.expiresAt);
     revalidatePath("/admin/account");
     return { ok: true, message: "Password changed. All other sessions have been signed out." };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function changeEmailAction(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    const session = await requireAction(formData);
+    const currentPassword = formData.get("currentPassword");
+    const newEmail = formData.get("newEmail");
+    if (typeof currentPassword !== "string" || typeof newEmail !== "string" || !newEmail.trim()) {
+      throw new UserInputError("Fill in every field.");
+    }
+    const { userAgent } = await requestMeta();
+    const fresh = await changeOwnEmail(getDb(), session.user, { currentPassword, newEmail, userAgent });
+    await setSessionCookie(fresh.token, fresh.expiresAt);
+    revalidatePath("/admin", "layout");
+    return {
+      ok: true,
+      message: "Email changed. Use it next time you sign in. All other sessions have been signed out.",
+    };
   } catch (error) {
     return actionError(error);
   }

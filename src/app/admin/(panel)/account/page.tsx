@@ -7,6 +7,7 @@ import { requireSession } from "@/server/auth/request";
 import { listActiveSessions } from "@/server/auth/sessions";
 import { getDb } from "@/server/db";
 import { revokeOtherSessionsAction, revokeSessionAction } from "./actions";
+import { EmailForm } from "./email-form";
 import { PasswordForm } from "./password-form";
 
 export const metadata: Metadata = { title: "Account" };
@@ -44,7 +45,10 @@ export default async function AccountPage() {
 
   return (
     <>
-      <AdminPageHeader title="Account" description="Your profile, password and signed-in sessions." />
+      <AdminPageHeader
+        title="Account"
+        description="Every signed-in role — including owner — can update their own email and password here."
+      />
       <div className="grid gap-6 xl:grid-cols-2">
         <AdminCard title="Profile">
           <dl className="grid grid-cols-[8rem_1fr] gap-y-2 text-sm">
@@ -59,7 +63,18 @@ export default async function AccountPage() {
           </dl>
         </AdminCard>
 
+        <AdminCard title="Change email">
+          <p className="mb-4 text-sm text-muted">
+            Updates the address you use to sign in. You will need your current password to confirm.
+          </p>
+          <EmailForm csrf={session.csrfToken} currentEmail={user.email} />
+        </AdminCard>
+
         <AdminCard title="Change password">
+          <p className="mb-4 text-sm text-muted">
+            Choose a new password while signed in. If you cannot sign in, use Forgot password on the
+            sign-in page instead.
+          </p>
           <PasswordForm csrf={session.csrfToken} />
         </AdminCard>
 
@@ -74,7 +89,7 @@ export default async function AccountPage() {
                   <p className="font-medium">
                     {describeAgent(item.userAgent)}
                     {item.id === session.id ? (
-                      <span className="ml-2 rounded-full bg-sage-pale px-2 py-0.5 text-xs font-medium text-sage-deep">
+                      <span className="ml-2 rounded-full bg-oak-pale px-2 py-0.5 text-xs font-medium text-oak-deep">
                         This browser
                       </span>
                     ) : null}

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { StaticPage } from "@/components/site/static-page";
 import { analyticsMeasurementId } from "@/lib/analytics";
 import { pageMetadata } from "@/lib/seo/metadata";
-import { site } from "@/lib/site";
+import { loadPublicSite } from "@/server/loaders";
 
 export const metadata = pageMetadata({
   title: "Privacy policy",
@@ -11,14 +11,15 @@ export const metadata = pageMetadata({
   path: "/privacy",
 });
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
   const analyticsOn = analyticsMeasurementId() !== null;
+  const home = await loadPublicSite();
   return (
     <StaticPage
       title="Privacy policy"
       lead="TidyNest is a reading site. You do not need an account, and we collect as little information as we can."
       path="/privacy"
-      lastUpdated="13 October 2026"
+      lastUpdated="21 October 2026"
     >
       <h2>Information we collect</h2>
       <p>
@@ -36,17 +37,22 @@ export default function PrivacyPage() {
       {analyticsOn ? (
         <p>
           We use Google Analytics cookies to understand how readers use the site, as described below. The only
-          other cookies we use are strictly necessary cookies for members of the {site.name} team who sign in
+          other cookies we use are strictly necessary cookies for members of the {home.name} team who sign in
           to the editorial dashboard.
         </p>
       ) : (
         <p>
           Reading the site does not set any cookies. The only cookies we use are strictly necessary cookies
-          for members of the {site.name} team who sign in to the editorial dashboard.
+          for members of the {home.name} team who sign in to the editorial dashboard.
         </p>
       )}
 
       <h2>Analytics</h2>
+      <p>
+        We count how many times each public page is opened, so we can see which guides are read. The count is
+        stored as the page address and a daily total. We do not set a cookie for this, and we do not store
+        your IP address, name, or anything else that identifies you.
+      </p>
       {analyticsOn ? (
         <p>
           We use Google Analytics to measure which pages are read and how visitors find them, so we can
@@ -55,17 +61,14 @@ export default function PrivacyPage() {
           address or any other information that directly identifies you. Google&apos;s use of this data is
           described in <a href="https://policies.google.com/privacy">Google&apos;s privacy policy</a>.
         </p>
-      ) : (
-        <p>
-          We do not currently use analytics or advertising tools. If we decide to add analytics in the future,
-          we will update this policy before doing so and explain what is collected and why.
-        </p>
-      )}
+      ) : null}
 
-      <h2>Emails you send us</h2>
+      <h2>Messages you send us</h2>
       <p>
-        If you email us, we use your email address and message only to read and reply to it. We do not add you
-        to mailing lists or share your message with anyone else.
+        If you email us or use the contact form, we use your name, email address and message only to read and
+        reply. Messages sent through the form, and our replies, are kept in our site&apos;s admin system so
+        our team can read and answer them. We do not add you to mailing lists or share your message with
+        anyone else.
       </p>
 
       <h2>Links to other websites</h2>

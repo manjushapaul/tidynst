@@ -13,7 +13,10 @@ Nothing in this document should be done without the owner's approval.
 1. The production deployment is live on its final domain over HTTPS.
 2. `NEXT_PUBLIC_SITE_URL` is set to that origin (for example `https://www.example.in`) in the
    Vercel **Production** environment. Canonical URLs, the sitemap and structured data all use it.
-3. At least a handful of guides have been reviewed and published through the CMS.
+   With `SITE_INDEXING=enabled`, the build and server refuse to start unless it is an `https`
+   address other than localhost.
+3. At least a handful of guides have been reviewed and published through the CMS. The admin
+   **SEO health** page lists remaining problems and categories that still need guides.
 4. The privacy policy, affiliate disclosure and contact email are accurate.
 
 ## 2. Verify the property

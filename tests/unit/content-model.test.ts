@@ -35,6 +35,18 @@ describe("guide content schema", () => {
     expect(parsed.body).toBe("a\nb");
   });
 
+  it("defaults a missing subcategory and only changes the hash when one is chosen", () => {
+    const { subcategoryId: _ignored, ...without } = guideContent();
+    const parsed = guideContentSchema.parse(without);
+    expect(parsed.subcategoryId).toBeNull();
+    expect(guideContentHash(parsed)).toBe(guideContentHash(guideContent()));
+    const chosen = guideContent({ subcategoryId: uuid(4) });
+    expect(guideContentHash(chosen)).not.toBe(guideContentHash(guideContent()));
+    expect(
+      guideContentSchema.safeParse(guideContent({ category: null, subcategoryId: uuid(4) })).success,
+    ).toBe(false);
+  });
+
   it("rejects unknown fields, invalid categories and duplicates", () => {
     expect(guideContentSchema.safeParse({ ...guideContent(), status: "published" }).success).toBe(false);
     expect(guideContentSchema.safeParse({ ...guideContent(), category: "no-drill" }).success).toBe(false);
@@ -96,11 +108,8 @@ describe("publish rules", () => {
     expect(publishIssues(guideContent(), context)).toEqual([]);
   });
 
-  it("requires a category, summary length and enough words", () => {
-    const issues = publishIssues(
-      guideContent({ category: null, excerpt: "Too short", body: "Short body." }),
-      context,
-    );
+  it("requires a category, summary length and some article text", () => {
+    const issues = publishIssues(guideContent({ category: null, excerpt: "Too short", body: "" }), context);
     const fields = issues.map((issue) => issue.field);
     expect(fields).toEqual(expect.arrayContaining(["category", "excerpt", "body"]));
   });
@@ -133,5 +142,26 @@ describe("publish rules", () => {
     const issues = publishIssues(guideContent({ excerpt }), context);
     expect(issues.map((issue) => issue.field)).toContain("seoDescription");
     expect(publishIssues(guideContent({ excerpt, seoDescription: "B".repeat(120) }), context)).toEqual([]);
+  });
+
+  it("does not limit the length of the article text", () => {
+    const bodyIssue = (markdown: string) =>
+      publishIssues(guideContent({ body: markdown }), context).find((issue) => issue.field === "body");
+
+    expect(bodyIssue("## Section\n\nShort.")).toBeUndefined();
+    expect(bodyIssue(`## Section\n\n${"Word ".repeat(2000)}`)).toBeUndefined();
+    expect(bodyIssue(`![Shelf photo](/media/${uuid(7)}/photo.png)`)?.message).toBe(
+      "Add the article text before publishing.",
+    );
+  });
+
+  it("publishes summaries of 100–300 characters", () => {
+    const seoDescription = "B".repeat(120);
+    expect(publishIssues(guideContent({ excerpt: "A".repeat(300), seoDescription }), context)).toEqual([]);
+    expect(publishIssues(guideContent({ excerpt: "A".repeat(100), seoDescription }), context)).toEqual([]);
+    expect(publishIssues(guideContent({ excerpt: "A".repeat(99), seoDescription }), context)).toEqual([
+      { field: "excerpt", message: "Summary must be 100–300 characters to publish." },
+    ]);
+    expect(guideContentSchema.safeParse(guideContent({ excerpt: "A".repeat(301) })).success).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { isIndexingEnabled } from "@/lib/seo/indexing";
 import { buildSitemap } from "@/lib/seo/sitemap";
 import { getDb } from "@/server/db";
 import { listSitemapGuides, listTopics, type SitemapGuide } from "@/server/public-content";
+import { listSitemapSubcategories } from "@/server/subcategories";
 
 function latestByKey<K extends string>(guides: readonly SitemapGuide[], key: (guide: SitemapGuide) => K[]) {
   const latest = new Map<K, Date>();
@@ -23,7 +24,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return buildSitemap({ indexingEnabled: false, guides: [], categories: [], topics: [] });
 
   const db = getDb();
-  const [guides, topics] = await Promise.all([listSitemapGuides(db), listTopics(db)]);
+  const [guides, topics, areas] = await Promise.all([
+    listSitemapGuides(db),
+    listTopics(db),
+    listSitemapSubcategories(db),
+  ]);
   const byCategory = latestByKey<CategorySlug>(guides, (guide) => (guide.category ? [guide.category] : []));
   const byTopic = latestByKey<string>(guides, (guide) => guide.topicSlugs);
 
@@ -34,5 +39,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     topics: topics
       .filter((topic) => topic.guideCount > 0 && byTopic.has(topic.slug))
       .map((topic) => ({ slug: topic.slug, updatedAt: byTopic.get(topic.slug)! })),
+    subcategories: areas.map((area) => ({
+      category: area.category,
+      slug: area.slug,
+      updatedAt: area.updatedAt,
+    })),
   });
 }

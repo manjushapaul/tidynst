@@ -1,8 +1,23 @@
 import "server-only";
-import { and, desc, eq, inArray, isNotNull, ne, sql, type SQL } from "drizzle-orm";
-import { guideRevisions, guides, mediaAssets, products, topics } from "@/db/schema";
+import { and, asc, desc, eq, exists, inArray, isNotNull, ne, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import {
+  guideRevisions,
+  guides,
+  mediaAssets,
+  products,
+  subcategories,
+  subcategoryGroups,
+  topics,
+  type GuideFaq,
+} from "@/db/schema";
 import type { Db } from "@/db/types";
 import type { CategorySlug } from "@/content/categories";
+import { type ArticleImageStyle, resolveArticleImageStyle } from "@/lib/content/article-image-style";
+import type { BodyImageSizes, ImageSize } from "@/lib/content/body-images";
+import { type FeaturedImageStyle, resolveFeaturedImageStyle } from "@/lib/content/featured-image-style";
+import { bodyMediaIds } from "@/lib/content/publish-rules";
+import { titleMatchesTopic } from "@/lib/content/topic-match";
 
 /**
  * Read-only queries for the public site. Every query joins guides to the revision referenced by
@@ -36,19 +51,50 @@ export type PublicProduct = {
 
 export type PublishedGuide = GuideSummary & {
   id: string;
+  subcategoryId: string | null;
+  subcategoryGroupId: string | null;
   body: string;
+  closing: string;
   seoTitle: string | null;
   seoDescription: string | null;
   topicIds: string[];
   topics: PublicTopic[];
   products: PublicProduct[];
+  faqs: GuideFaq[];
+  articleImageStyle: ArticleImageStyle;
+  featuredImageStyle: FeaturedImageStyle;
+  bodyImageSizes: BodyImageSizes;
 };
 
 export function mediaPath(id: string, filename: string): string {
   return `/media/${id}/${encodeURIComponent(filename)}`;
 }
 
-const wordCount = sql<number>`coalesce(array_length(regexp_split_to_array(trim(${guideRevisions.body}), '\\s+'), 1), 0)`;
+/** Sizes of the library images a body uses, master and processed variants alike. */
+export async function bodyImageSizes(db: Db, markdown: string): Promise<BodyImageSizes> {
+  const ids = bodyMediaIds(markdown);
+  if (!ids.length) return {};
+  const rows = await db
+    .select({
+      id: mediaAssets.id,
+      filename: mediaAssets.filename,
+      width: mediaAssets.width,
+      height: mediaAssets.height,
+      variants: mediaAssets.variants,
+    })
+    .from(mediaAssets)
+    .where(inArray(mediaAssets.id, ids));
+  const sizes: Record<string, ImageSize> = {};
+  for (const row of rows) {
+    sizes[`${row.id}/${row.filename}`] = { width: row.width, height: row.height };
+    for (const variant of row.variants ?? []) {
+      sizes[`${row.id}/${variant.filename}`] = { width: variant.width, height: variant.height };
+    }
+  }
+  return sizes;
+}
+
+const wordCount = sql<number>`coalesce(array_length(regexp_split_to_array(trim(${guideRevisions.body} || ' ' || ${guideRevisions.closing}), '\\s+'), 1), 0)`;
 
 const summaryColumns = {
   slug: guideRevisions.slug,
@@ -109,11 +155,41 @@ function publishedGuides(db: Db) {
     .leftJoin(mediaAssets, eq(guideRevisions.featuredImageId, mediaAssets.id));
 }
 
-export type GuideFilter = { category?: CategorySlug; topicId?: string; excludeSlug?: string };
+export type GuideFilter = {
+  category?: CategorySlug;
+  subcategoryId?: string;
+  /** Every article filed under this category section. */
+  subcategoryGroupId?: string;
+  /** Only articles not filed under one of their subcategory's topics. */
+  withoutTopic?: boolean;
+  topicId?: string;
+  excludeSlug?: string;
+};
 
 function filterConditions(filter: GuideFilter): SQL | undefined {
   const conditions: SQL[] = [isNotNull(guides.publishedRevisionId)];
   if (filter.category) conditions.push(eq(guideRevisions.category, filter.category));
+  if (filter.subcategoryId) conditions.push(eq(guideRevisions.subcategoryId, filter.subcategoryId));
+  if (filter.subcategoryGroupId) {
+    conditions.push(
+      sql`(
+        ${guideRevisions.subcategoryGroupId} = ${filter.subcategoryGroupId}
+        or ${guideRevisions.subcategoryId} in (
+          select ${subcategories.id} from ${subcategories} where ${subcategories.groupId} = ${filter.subcategoryGroupId}
+        )
+      )`,
+    );
+  }
+  if (filter.withoutTopic) {
+    conditions.push(
+      sql`not exists (
+        select 1 from ${subcategories}
+        inner join ${subcategoryGroups} on ${subcategoryGroups.id} = ${subcategories.groupId}
+        where ${subcategories.id} = ${guideRevisions.subcategoryId}
+          and ${subcategories.slug} <> ${subcategoryGroups.slug}
+      )`,
+    );
+  }
   if (filter.topicId) conditions.push(sql`${filter.topicId}::uuid = any(${guideRevisions.topicIds})`);
   if (filter.excludeSlug) conditions.push(ne(guideRevisions.slug, filter.excludeSlug));
   return and(...conditions);
@@ -131,6 +207,31 @@ export async function listPublishedGuides(
   return rows.map(toSummary);
 }
 
+const TOPIC_GUIDES_MAX = 500;
+
+/**
+ * Articles for a topic page: those filed under the topic, plus articles in the same subcategory
+ * with no topic of their own whose title is about the topic.
+ */
+export async function listTopicGuides(
+  db: Db,
+  topic: { id: string; name: string; groupId: string },
+): Promise<GuideSummary[]> {
+  const [filed, inSubcategory] = await Promise.all([
+    listPublishedGuides(db, { subcategoryId: topic.id, limit: TOPIC_GUIDES_MAX }),
+    listPublishedGuides(db, {
+      subcategoryGroupId: topic.groupId,
+      withoutTopic: true,
+      limit: TOPIC_GUIDES_MAX,
+    }),
+  ]);
+  const seen = new Set(filed.map((guide) => guide.slug));
+  const matched = inSubcategory.filter(
+    (guide) => !seen.has(guide.slug) && titleMatchesTopic(topic.name, guide.title),
+  );
+  return [...filed, ...matched].sort((a, b) => b.firstPublishedAt.getTime() - a.firstPublishedAt.getTime());
+}
+
 export async function countPublishedGuides(db: Db, filter: GuideFilter = {}): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -140,16 +241,51 @@ export async function countPublishedGuides(db: Db, filter: GuideFilter = {}): Pr
   return row?.count ?? 0;
 }
 
+/**
+ * The current address of a published guide that used `slug` in an earlier revision, so old links
+ * keep working after a rename. Callers check for a live guide at `slug` first; that always wins.
+ */
+export async function findRenamedGuide(
+  db: Db,
+  slug: string,
+): Promise<{ slug: string; category: CategorySlug | null } | null> {
+  const earlier = alias(guideRevisions, "earlier");
+  const [row] = await db
+    .select({ slug: guideRevisions.slug, category: guideRevisions.category })
+    .from(guides)
+    .innerJoin(guideRevisions, eq(guides.publishedRevisionId, guideRevisions.id))
+    .where(
+      and(
+        ne(guideRevisions.slug, slug),
+        exists(
+          db
+            .select({ id: earlier.id })
+            .from(earlier)
+            .where(and(eq(earlier.guideId, guides.id), eq(earlier.slug, slug))),
+        ),
+      ),
+    )
+    .orderBy(desc(guides.publishedAt))
+    .limit(1);
+  return row ?? null;
+}
+
 export async function getPublishedGuide(db: Db, slug: string): Promise<PublishedGuide | null> {
   const [row] = await db
     .select({
       ...summaryColumns,
       id: guides.id,
+      subcategoryId: guideRevisions.subcategoryId,
+      subcategoryGroupId: guideRevisions.subcategoryGroupId,
       body: guideRevisions.body,
+      closing: guideRevisions.closing,
       seoTitle: guideRevisions.seoTitle,
       seoDescription: guideRevisions.seoDescription,
       topicIds: guideRevisions.topicIds,
       productRefs: guideRevisions.products,
+      faqs: guideRevisions.faqs,
+      articleImageStyle: guideRevisions.articleImageStyle,
+      featuredImageStyle: guideRevisions.featuredImageStyle,
     })
     .from(guides)
     .innerJoin(guideRevisions, eq(guides.publishedRevisionId, guideRevisions.id))
@@ -165,6 +301,8 @@ export async function getPublishedGuide(db: Db, slug: string): Promise<Published
         .where(inArray(topics.id, row.topicIds))
         .orderBy(topics.name)
     : [];
+
+  const imageSizes = await bodyImageSizes(db, `${row.body}\n${row.closing}`);
 
   const productIds = row.productRefs.map((ref) => ref.productId);
   const productRows = productIds.length
@@ -189,24 +327,54 @@ export async function getPublishedGuide(db: Db, slug: string): Promise<Published
   return {
     ...toSummary(row),
     id: row.id,
+    subcategoryId: row.subcategoryId,
+    subcategoryGroupId: row.subcategoryGroupId,
     body: row.body,
+    closing: row.closing,
     seoTitle: row.seoTitle,
     seoDescription: row.seoDescription,
     topicIds: row.topicIds,
     topics: topicRows,
     products: orderedProducts,
+    faqs: row.faqs,
+    articleImageStyle: resolveArticleImageStyle(row.articleImageStyle),
+    featuredImageStyle: resolveFeaturedImageStyle(row.featuredImageStyle),
+    bodyImageSizes: imageSizes,
   };
 }
 
+export type ArticleTopic = { id: string; slug: string; name: string };
+
+/**
+ * Subcategory buttons for an article: the same sections as its category page, in the same order.
+ * They follow the published article's category, the way related guides do, rather than a separate topic list.
+ */
+export async function articleTopics(db: Db, category: CategorySlug | null): Promise<ArticleTopic[]> {
+  if (!category) return [];
+  return db
+    .select({
+      id: subcategoryGroups.id,
+      slug: subcategoryGroups.slug,
+      name: subcategoryGroups.name,
+    })
+    .from(subcategoryGroups)
+    .where(eq(subcategoryGroups.category, category))
+    .orderBy(asc(subcategoryGroups.position), asc(subcategoryGroups.name));
+}
+
 /** Same-category guides first, then guides sharing a topic, newest first. */
-export async function relatedGuides(db: Db, guide: PublishedGuide, limit = 3): Promise<GuideSummary[]> {
+export async function relatedGuides(
+  db: Db,
+  guide: { slug: string; category: CategorySlug | null; topicIds: readonly string[] },
+  limit = 3,
+): Promise<GuideSummary[]> {
   const sharesTopic = guide.topicIds.length
     ? sql`${guideRevisions.topicIds} && ${sql.param(guide.topicIds)}::uuid[]`
     : sql`false`;
   const sameCategory = guide.category ? sql`${guideRevisions.category} = ${guide.category}` : sql`false`;
   const rows = await publishedGuides(db)
     .where(and(ne(guideRevisions.slug, guide.slug), sql`(${sameCategory} or ${sharesTopic})`))
-    .orderBy(sql`(${sameCategory}) desc`, desc(guides.firstPublishedAt))
+    .orderBy(...(guide.category ? [sql`(${sameCategory}) desc`] : []), desc(guides.firstPublishedAt))
     .limit(limit);
   return rows.map(toSummary);
 }
@@ -264,7 +432,22 @@ export type SitemapGuide = {
   category: CategorySlug | null;
   topicSlugs: string[];
   updatedAt: Date;
+  /** Featured image first, then body images in reading order; listed in the image sitemap. */
+  images: string[];
 };
+
+const BODY_IMAGE_PATH = String.raw`!\[[^]\n]*\]\((/media/[0-9a-f-]{36}/[^)\s#?]+)`;
+
+/** Body image paths as written, found in the database so article text is never sent to the app. */
+const bodyImagePaths = sql<string[]>`coalesce((
+  select array_agg(f.path order by f.pos) from (
+    select x[1] as path, min(n) as pos
+    from regexp_matches(${guideRevisions.body} || chr(10) || ${guideRevisions.closing}, ${BODY_IMAGE_PATH}, 'g')
+      with ordinality as t(x, n)
+    group by x[1]
+  ) f
+  where exists (select 1 from media_assets m where m.id::text = substring(f.path from 8 for 36))
+), array[]::text[])`;
 
 export async function listSitemapGuides(db: Db): Promise<SitemapGuide[]> {
   const rows = await db
@@ -275,9 +458,20 @@ export async function listSitemapGuides(db: Db): Promise<SitemapGuide[]> {
         string[]
       >`coalesce((select array_agg(t.slug order by t.slug) from topics t where t.id = any(${guideRevisions.topicIds})), '{}')`,
       updatedAt: guides.publishedAt,
+      imageId: mediaAssets.id,
+      imageFilename: mediaAssets.filename,
+      bodyImages: bodyImagePaths,
     })
     .from(guides)
     .innerJoin(guideRevisions, eq(guides.publishedRevisionId, guideRevisions.id))
+    .leftJoin(mediaAssets, eq(guideRevisions.featuredImageId, mediaAssets.id))
     .orderBy(desc(guides.publishedAt));
-  return rows.map((row) => ({ ...row, updatedAt: row.updatedAt! }));
+  return rows.map(({ imageId, imageFilename, bodyImages, ...row }) => {
+    const featured = imageId && imageFilename ? [mediaPath(imageId, imageFilename)] : [];
+    return {
+      ...row,
+      updatedAt: row.updatedAt!,
+      images: [...new Set([...featured, ...bodyImages])],
+    };
+  });
 }

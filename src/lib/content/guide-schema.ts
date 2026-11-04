@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { CATEGORY_SLUGS } from "@/content/categories";
+import { ARTICLE_IMAGE_DEFAULTS, articleImageStyleSchema } from "./article-image-style";
+import { FEATURED_IMAGE_DEFAULTS, featuredImageStyleSchema } from "./featured-image-style";
 import { isValidSlug } from "./slug";
 
 export const GUIDE_LIMITS = {
@@ -10,9 +12,12 @@ export const GUIDE_LIMITS = {
   seoTitleMax: 70,
   seoDescriptionMax: 170,
   imageAltMax: 200,
-  topicsMax: 6,
+  topicsMax: 12,
   productsMax: 12,
   productNoteMax: 300,
+  faqsMax: 20,
+  faqQuestionMax: 200,
+  faqAnswerMax: 2_000,
 } as const;
 
 const optionalText = (max: number, label: string) =>
@@ -44,9 +49,18 @@ export const guideContentSchema = z
       .max(GUIDE_LIMITS.excerptMax, `Summary must be ${GUIDE_LIMITS.excerptMax} characters or fewer.`),
     body: z
       .string()
-      .max(GUIDE_LIMITS.bodyMax, "The guide body is too long.")
+      .max(GUIDE_LIMITS.bodyMax, "The article body is too long.")
+      .transform((value) => value.replace(/\r\n?/g, "\n").replace(/\s+$/, "")),
+    closing: z
+      .string()
+      .max(GUIDE_LIMITS.bodyMax, "The final thoughts section is too long.")
+      .default("")
       .transform((value) => value.replace(/\r\n?/g, "\n").replace(/\s+$/, "")),
     category: z.enum(CATEGORY_SLUGS).nullable(),
+    /** The topic inside the subcategory. Without one, topic pages match the article by title. */
+    subcategoryId: z.uuid().nullable().default(null),
+    /** The subcategory button this article is filed under. */
+    subcategoryGroupId: z.uuid().nullable().default(null),
     topicIds: z
       .array(z.uuid())
       .max(GUIDE_LIMITS.topicsMax, `Choose at most ${GUIDE_LIMITS.topicsMax} topics.`)
@@ -67,8 +81,48 @@ export const guideContentSchema = z
     seoDescription: optionalText(GUIDE_LIMITS.seoDescriptionMax, "Meta description"),
     featuredImageId: z.uuid().nullable(),
     featuredImageAlt: optionalText(GUIDE_LIMITS.imageAltMax, "Image alt text"),
+    featuredImageStyle: featuredImageStyleSchema.default(FEATURED_IMAGE_DEFAULTS),
+    faqs: z
+      .array(
+        z
+          .object({
+            question: z
+              .string()
+              .trim()
+              .min(1, "Each FAQ needs a question.")
+              .max(
+                GUIDE_LIMITS.faqQuestionMax,
+                `FAQ questions must be ${GUIDE_LIMITS.faqQuestionMax} characters or fewer.`,
+              ),
+            answer: z
+              .string()
+              .transform((value) => value.replace(/\r\n?/g, "\n").trim())
+              .pipe(
+                z
+                  .string()
+                  .min(1, "Each FAQ needs an answer.")
+                  .max(
+                    GUIDE_LIMITS.faqAnswerMax,
+                    `FAQ answers must be ${GUIDE_LIMITS.faqAnswerMax} characters or fewer.`,
+                  ),
+              ),
+          })
+          .strict(),
+      )
+      .max(GUIDE_LIMITS.faqsMax, `Add at most ${GUIDE_LIMITS.faqsMax} FAQs.`)
+      .default([]),
+    articleImageStyle: articleImageStyleSchema.default(ARTICLE_IMAGE_DEFAULTS),
   })
-  .strict();
+  .strict()
+  .superRefine((value, ctx) => {
+    if ((value.subcategoryId || value.subcategoryGroupId) && !value.category) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["subcategoryGroupId"],
+        message: "Choose a category before a subcategory.",
+      });
+    }
+  });
 
 export type GuideContentInput = z.input<typeof guideContentSchema>;
 export type GuideContent = z.output<typeof guideContentSchema>;

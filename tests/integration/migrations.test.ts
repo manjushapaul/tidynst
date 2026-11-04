@@ -33,15 +33,22 @@ describe("migrations on an isolated database", () => {
     );
     expect(result.rows.map((row) => row.table_name)).toEqual([
       "audit_events",
+      "contact_messages",
+      "contact_replies",
       "guide_products",
       "guide_reviews",
       "guide_revisions",
       "guide_topics",
       "guides",
+      "homepage_settings",
       "media_assets",
+      "page_views",
+      "password_reset_tokens",
       "products",
       "rate_limit_events",
       "sessions",
+      "subcategories",
+      "subcategory_groups",
       "topics",
       "users",
     ]);

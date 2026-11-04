@@ -2,17 +2,25 @@ import Link from "next/link";
 import { Logo } from "./logo";
 import { MobileNav } from "./mobile-nav";
 import { DesktopNav } from "./nav-links";
+import { companyNav } from "./navigation";
+import { categoryPath } from "@/content/categories";
+import { loadPublicSite } from "@/server/loaders";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const home = await loadPublicSite();
+  const primary = home.categories.map((category) => ({
+    href: categoryPath(category.slug),
+    label: category.navLabel,
+  }));
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-canvas/90 backdrop-blur-md supports-[backdrop-filter]:bg-canvas/80">
       <div className="relative container-page flex h-16 items-center justify-between gap-4">
-        <Logo />
+        <Logo name={home.name} image={home.logo} />
         <div className="flex items-center gap-1">
-          <DesktopNav />
+          <DesktopNav items={primary} />
           <Link
             href="/search"
-            className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-sage-pale"
+            className="inline-flex size-10 items-center justify-center rounded-full text-ink hover:bg-oak-pale"
           >
             <span className="sr-only">Search guides</span>
             <svg
@@ -27,7 +35,7 @@ export function SiteHeader() {
               <path d="M16 16l4 4" strokeLinecap="round" />
             </svg>
           </Link>
-          <MobileNav />
+          <MobileNav items={[...primary, { href: "/search", label: "Search" }, ...companyNav]} />
         </div>
       </div>
     </header>

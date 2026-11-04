@@ -8,10 +8,16 @@ export type Crumb = { name: string; href: string };
  * Visual breadcrumb trail plus matching BreadcrumbList structured data, so the two can never
  * disagree. The last crumb is the current page and is not linked.
  */
-export function Breadcrumbs({ items }: { items: readonly Crumb[] }) {
+export function Breadcrumbs({
+  items,
+  structuredData = true,
+}: {
+  items: readonly Crumb[];
+  structuredData?: boolean;
+}) {
   return (
     <>
-      <JsonLd data={breadcrumbJsonLd(items)} />
+      {structuredData ? <JsonLd data={breadcrumbJsonLd(items)} /> : null}
       <nav aria-label="Breadcrumb" className="text-sm text-muted">
         <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
           {items.map((item, index) => {

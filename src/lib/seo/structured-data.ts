@@ -5,25 +5,25 @@ type JsonLd = Record<string, unknown>;
 
 const organizationId = `${site.url}/#organization`;
 
-export function organizationJsonLd(): JsonLd {
+export function organizationJsonLd(brand?: { name?: string; logoUrl?: string | null }): JsonLd {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     "@id": organizationId,
-    name: site.name,
+    name: brand?.name ?? site.name,
     url: absoluteUrl("/"),
-    logo: { "@type": "ImageObject", url: absoluteUrl("/icon.svg") },
+    logo: { "@type": "ImageObject", url: absoluteUrl(brand?.logoUrl || "/icon.svg") },
   };
 }
 
-export function websiteJsonLd(): JsonLd {
+export function websiteJsonLd(brand?: { name?: string; description?: string }): JsonLd {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${site.url}/#website`,
-    name: site.name,
+    name: brand?.name ?? site.name,
     url: absoluteUrl("/"),
-    description: site.description,
+    description: brand?.description ?? site.description,
     inLanguage: site.language,
     publisher: { "@id": organizationId },
   };
@@ -42,6 +42,39 @@ export function breadcrumbJsonLd(items: readonly Crumb[]): JsonLd {
   };
 }
 
+export type CollectionInput = {
+  name: string;
+  description: string;
+  /** Canonical path of this page of the listing, including `?page=` after the first page. */
+  path: string;
+  items: ReadonlyArray<{ name: string; path: string }>;
+  /** Position of the first item, so later pages continue the numbering. */
+  firstPosition?: number;
+};
+
+/** A category, subcategory or topic hub and the guides listed on this page of it. */
+export function collectionPageJsonLd(input: CollectionInput): JsonLd {
+  const first = input.firstPosition ?? 1;
+  return {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: input.name,
+    description: input.description,
+    url: absoluteUrl(input.path),
+    inLanguage: site.language,
+    isPartOf: { "@id": `${site.url}/#website` },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: input.items.map((item, index) => ({
+        "@type": "ListItem",
+        position: first + index,
+        name: item.name,
+        url: absoluteUrl(item.path),
+      })),
+    },
+  };
+}
+
 export type ArticleInput = {
   title: string;
   description: string;
@@ -50,6 +83,7 @@ export type ArticleInput = {
   dateModified: Date;
   image?: { src: string; width: number; height: number } | null;
   section?: string;
+  publisherName?: string;
 };
 
 /**
@@ -79,7 +113,7 @@ export function articleJsonLd(input: ArticleInput): JsonLd {
         }
       : {}),
     author: { "@type": "Organization", name: site.editorialName, url: absoluteUrl("/about") },
-    publisher: { "@id": organizationId, "@type": "Organization", name: site.name },
+    publisher: { "@id": organizationId, "@type": "Organization", name: input.publisherName ?? site.name },
   };
 }
 

@@ -7,6 +7,7 @@ import { audit } from "./audit";
 import { hashPassword, passwordProblem, verifyPassword } from "./auth/password";
 import { assertCan, type Actor, AuthorizationError, type Role } from "./auth/permissions";
 import { createSession, revokeUserSessions } from "./auth/sessions";
+import { isUniqueViolation } from "./pg-error";
 
 export class UserInputError extends Error {
   override name = "UserInputError";
@@ -165,6 +166,48 @@ export async function changeOwnPassword(
     });
     return session;
   });
+}
+
+/**
+ * Changes the actor's own sign-in email after re-verifying their password. Like a password change,
+ * every other session is revoked and a fresh session is issued for the current browser. The audit
+ * entry records that the email changed, never the addresses themselves.
+ */
+export async function changeOwnEmail(
+  db: Db,
+  actor: Actor,
+  input: { currentPassword: string; newEmail: string; userAgent: string | null },
+) {
+  const [user] = await db.select().from(users).where(eq(users.id, actor.id)).limit(1);
+  if (!user || user.disabledAt) throw new AuthorizationError();
+  if (!(await verifyPassword(user.passwordHash, input.currentPassword))) {
+    throw new UserInputError("Your current password is incorrect.");
+  }
+  const parsed = emailSchema.safeParse(input.newEmail);
+  if (!parsed.success) throw new UserInputError("Enter a valid email address.");
+  const email = parsed.data;
+  if (email === user.email) throw new UserInputError("That is already your email address.");
+  if (await emailTaken(db, email)) throw new UserInputError("A user with that email already exists.");
+  try {
+    return await db.transaction(async (tx) => {
+      const now = new Date();
+      await tx.update(users).set({ email, updatedAt: now }).where(eq(users.id, user.id));
+      await revokeUserSessions(tx, user.id, { now });
+      const session = await createSession(tx, user.id, input.userAgent, now);
+      await audit(tx, {
+        actorId: user.id,
+        action: "user.email_changed",
+        entityType: "user",
+        entityId: user.id,
+      });
+      return session;
+    });
+  } catch (error) {
+    if (isUniqueViolation(error, "users_email_key")) {
+      throw new UserInputError("A user with that email already exists.");
+    }
+    throw error;
+  }
 }
 
 export async function listUsers(db: Db, actor: Actor) {

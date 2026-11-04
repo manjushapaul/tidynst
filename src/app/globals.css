@@ -5,9 +5,9 @@
   --color-surface: #ffffff;
   --color-ink: #1f1e1c;
   --color-muted: #5c5751;
-  --color-sage: #5f6f52;
-  --color-sage-deep: #4a5840;
-  --color-sage-pale: #e8ece2;
+  --color-oak: #86643f;
+  --color-oak-deep: #6a4e33;
+  --color-oak-pale: #f1e6d4;
   --color-line: #e7e1d7;
   --color-line-strong: #d6cec1;
   --color-sand: #f2ede4;
@@ -24,9 +24,30 @@
   --shadow-card-hover: 0 2px 4px rgb(31 30 28 / 0.05), 0 18px 40px -18px rgb(31 30 28 / 0.22);
 
   --ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Tailwind's sizes, scaled by --text-scale. Any other font size in rem must be scaled too. */
+  --text-xs: calc(0.75rem * var(--text-scale));
+  --text-sm: calc(0.875rem * var(--text-scale));
+  --text-base: calc(1rem * var(--text-scale));
+  --text-lg: calc(1.125rem * var(--text-scale));
+  --text-xl: calc(1.25rem * var(--text-scale));
+  --text-2xl: calc(1.5rem * var(--text-scale));
+  --text-3xl: calc(1.875rem * var(--text-scale));
+  --text-4xl: calc(2.25rem * var(--text-scale));
+  --text-5xl: calc(3rem * var(--text-scale));
+  --text-6xl: calc(3.75rem * var(--text-scale));
 }
 
 @layer base {
+  /* Text is 15% smaller on phones. Spacing stays in plain rem, so only the type shrinks. */
+  :root {
+    --text-scale: 1;
+
+    @media (width < 40rem) {
+      --text-scale: 0.85;
+    }
+  }
+
   html {
     background-color: var(--color-canvas);
     color: var(--color-ink);
@@ -34,9 +55,39 @@
     text-rendering: optimizeLegibility;
   }
 
+  html:has([data-site-chrome]) {
+    background-color: var(--color-surface);
+  }
+
   body {
+    font-size: var(--text-base);
     font-family: var(--font-sans);
     font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Tailwind's reset gives buttons the default arrow; show the hand on everything clickable. */
+  a[href],
+  button,
+  [role="button"],
+  [role="tab"],
+  summary,
+  select,
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]),
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="submit"],
+  ::file-selector-button {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  input:disabled::file-selector-button,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
 
   h1,
@@ -54,12 +105,12 @@
   }
 
   ::selection {
-    background-color: var(--color-sage-pale);
+    background-color: var(--color-oak-pale);
     color: var(--color-ink);
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-sage);
+    outline: 2px solid var(--color-oak);
     outline-offset: 3px;
     border-radius: 4px;
   }
@@ -76,6 +127,240 @@
   }
 }
 
+/*
+ * Home call-to-action background, adapted from the two-layer CSS wave
+ * (https://codepen.io/Daag/pen/qBBvvdE). The crest is #f1e6d4 and settles into #e3cba6.
+ */
+.cta-ocean {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #e3cba6;
+}
+
+.cta-wave {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  width: 800px;
+  height: 56px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='198' viewBox='0 0 1600 198'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='50%25' x2='50%25' y1='0%25' y2='100%25'%3E%3Cstop stop-color='%23f1e6d4' stop-opacity='.9' offset='0%25'/%3E%3Cstop stop-color='%23e3cba6' offset='100%25'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23a)' d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z' transform='matrix(-1 0 0 1 1600 0)'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 220px 56px;
+  animation: cta-wave 7s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+  transform: translate3d(0, 0, 0);
+}
+
+.cta-wave:nth-child(2) {
+  top: 24px;
+  animation:
+    cta-wave 7s cubic-bezier(0.36, 0.45, 0.63, 0.53) -0.125s infinite,
+    cta-swell 7s ease -1.25s infinite;
+}
+
+/* Home hero call to action only. A compact pill with two distinct waves along the bottom. */
+.hero-cta {
+  width: min(100%, 12.75rem);
+  min-height: 0;
+  padding: 0.7rem 1.15rem;
+  border-width: thick;
+  border-color: #eadfce;
+  background-color: #fff;
+  font-size: calc(0.72rem * var(--text-scale));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-card);
+  transition:
+    transform 600ms var(--ease-gentle),
+    box-shadow 600ms var(--ease-gentle),
+    border-color 600ms var(--ease-gentle),
+    color 700ms var(--ease-gentle);
+}
+
+.hero-cta:hover,
+.hero-cta:focus-visible {
+  transform: translateY(-2px);
+  border-color: #e3cba6;
+  color: #fffdf8 !important;
+  box-shadow: 0 2px 4px rgb(31 30 28 / 0.05), 0 16px 32px -18px rgb(134 100 63 / 0.45);
+}
+
+.hero-cta .cta-ocean {
+  background: transparent;
+}
+
+/*
+ * Same two-layer treatment as the CodePen: one graphic, the second crest
+ * 23/198 of the wave lower, with the same swell. Scaled to the pill.
+ */
+.hero-cta .cta-wave {
+  top: auto;
+  bottom: -0.7rem;
+  left: 0;
+  width: 160rem;
+  height: 2.6rem;
+  aspect-ratio: auto;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  background-size: 21rem 2.6rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='198'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='50%25' x2='50%25' y1='-10.959%25' y2='100%25'%3E%3Cstop stop-color='%23e3cba6' stop-opacity='.4' offset='0%25'/%3E%3Cstop stop-color='%23d2b387' offset='100%25'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23a)' fill-rule='evenodd' d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z' transform='matrix(-1 0 0 1 1600 0)'/%3E%3C/svg%3E");
+  transition:
+    bottom 700ms var(--ease-gentle),
+    height 700ms var(--ease-gentle),
+    background-size 700ms var(--ease-gentle);
+  animation: hero-wave 7s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+}
+
+.hero-cta .cta-wave:nth-child(2) {
+  top: auto;
+  bottom: -1.25rem;
+  animation:
+    hero-wave 7s cubic-bezier(0.36, 0.45, 0.63, 0.53) -0.125s infinite,
+    hero-swell 7s ease -1.25s infinite;
+}
+
+.hero-cta:hover .cta-wave,
+.hero-cta:focus-visible .cta-wave {
+  bottom: 0;
+  height: 6.8rem;
+  background-size: 54.95rem 6.8rem;
+  /* The full oak wave behind the white hover text; at rest the button uses the lighter tan above. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='198'%3E%3Cdefs%3E%3ClinearGradient id='a' x1='50%25' x2='50%25' y1='-10.959%25' y2='100%25'%3E%3Cstop stop-color='%23c4a36e' stop-opacity='.28' offset='0%25'/%3E%3Cstop stop-color='%23956b3c' offset='100%25'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23a)' fill-rule='evenodd' d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z' transform='matrix(-1 0 0 1 1600 0)'/%3E%3C/svg%3E");
+  animation-name: hero-wave-cover;
+}
+
+.hero-cta:hover .cta-wave:nth-child(2),
+.hero-cta:focus-visible .cta-wave:nth-child(2) {
+  bottom: -0.55rem;
+  animation-name: hero-wave-cover, hero-swell;
+}
+
+/* Topic links: the hero pill with a still wave across its lower half. Hover fills it with oak. */
+.topic-chip {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0.6rem 1.05rem;
+  border: 4px solid #eadfce;
+  border-radius: 9999px;
+  background-color: #fff;
+  background-clip: padding-box;
+  box-shadow: var(--shadow-card);
+  color: var(--color-oak-deep);
+  font-size: calc(0.7rem * var(--text-scale));
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    transform 600ms var(--ease-gentle),
+    box-shadow 600ms var(--ease-gentle),
+    border-color 600ms var(--ease-gentle),
+    color 600ms var(--ease-gentle);
+}
+
+.topic-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-oak);
+  opacity: 0;
+  transition: opacity 600ms var(--ease-gentle);
+}
+
+.topic-chip:hover,
+.topic-chip:focus-visible {
+  transform: translateY(-2px);
+  border-color: #e3cba6;
+  color: #fffdf8;
+  box-shadow: 0 2px 4px rgb(31 30 28 / 0.05), 0 16px 32px -18px rgb(134 100 63 / 0.45);
+}
+
+.topic-chip:hover::before,
+.topic-chip:focus-visible::before,
+.topic-chip[aria-current="page"]::before {
+  opacity: 1;
+}
+
+.topic-chip[aria-current="page"] {
+  border-color: #e3cba6;
+  color: #fffdf8;
+}
+
+.topic-chip::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -2;
+  height: 58%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 198' preserveAspectRatio='none'%3E%3Cpath fill='%23ecdcc2' d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z' transform='matrix(-1 0 0 1 1600 0)'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 5.5rem 100%;
+}
+
+@keyframes hero-wave {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: -21rem;
+  }
+}
+
+@keyframes hero-wave-cover {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: -54.95rem;
+  }
+}
+
+@keyframes hero-swell {
+  0%,
+  100% {
+    transform: translate3d(0, -0.42rem, 0);
+  }
+  50% {
+    transform: translate3d(0, 0.08rem, 0);
+  }
+}
+
+@keyframes cta-wave {
+  from {
+    margin-left: 0;
+  }
+  to {
+    margin-left: -220px;
+  }
+}
+
+@keyframes cta-swell {
+  0%,
+  100% {
+    transform: translate3d(0, -4px, 0);
+  }
+  50% {
+    transform: translate3d(0, 2px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-wave {
+    animation: none !important;
+  }
+}
+
 @utility container-page {
   width: 100%;
   max-width: 72rem;
@@ -87,6 +372,58 @@
   }
 }
 
+/*
+ * Extends an article's content-and-contents grid into the page's right margin, keeping 1.5rem
+ * from the viewport edge. Capped at 20rem (contents column plus gap), so the text column never
+ * grows wider than the container.
+ */
+@utility article-grid-bleed {
+  @media (width >= 64rem) {
+    margin-right: calc(-1 * min(20rem, max(0px, (100vw - 72rem) / 2) + 0.5rem));
+  }
+}
+
+/*
+ * The home hero's decorative circle drifts round the photo's rounded border while bobbing and
+ * softly changing shape, like a cloud. The path is drawn inside the containing frame, so its
+ * inset and radius must match the photo's (inset-5, 1.5rem). It rests on the bottom-right corner
+ * (48.5% along the path) when motion is reduced.
+ */
+@utility hero-orbit {
+  offset-path: inset(1.25rem round 1.5rem);
+  offset-anchor: center;
+  offset-rotate: 0deg;
+  offset-distance: 48.5%;
+  animation:
+    hero-orbit 80s linear infinite,
+    hero-cloud 11s ease-in-out infinite alternate;
+}
+
+@keyframes hero-orbit {
+  from {
+    offset-distance: 48.5%;
+  }
+  to {
+    offset-distance: 148.5%;
+  }
+}
+
+@keyframes hero-cloud {
+  /* `transform` (unlike `translate`/`scale`) applies after the offset, so it doesn't scale the path. */
+  0% {
+    transform: none;
+    border-radius: 50%;
+  }
+  50% {
+    transform: translate(0.2rem, -0.6rem) scale(1.05);
+    border-radius: 54% 46% 52% 48% / 48% 54% 46% 52%;
+  }
+  100% {
+    transform: translate(-0.3rem, 0.4rem) scale(0.97);
+    border-radius: 47% 53% 49% 51% / 53% 47% 55% 45%;
+  }
+}
+
 @utility container-prose {
   width: 100%;
   max-width: 42rem;
@@ -95,16 +432,16 @@
 
 @utility eyebrow {
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-sage);
+  color: var(--color-oak);
 }
 
 /* Long-form guide body. Rendered from Markdown, so it styles plain elements. */
 @utility prose-tn {
-  font-size: 1.0625rem;
+  font-size: calc(1.0625rem * var(--text-scale));
   line-height: 1.75;
   color: var(--color-ink);
 
@@ -114,14 +451,14 @@
 
   & h2 {
     margin-top: 2.25em;
-    font-size: 1.625rem;
+    font-size: calc(1.625rem * var(--text-scale));
     line-height: 1.25;
     scroll-margin-top: 6rem;
   }
 
   & h3 {
     margin-top: 1.75em;
-    font-size: 1.25rem;
+    font-size: var(--text-xl);
     line-height: 1.35;
     scroll-margin-top: 6rem;
   }
@@ -136,7 +473,7 @@
   }
 
   & a {
-    color: var(--color-sage-deep);
+    color: var(--color-oak-deep);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
@@ -168,14 +505,19 @@
   }
 
   & li::marker {
-    color: var(--color-sage);
+    color: var(--color-oak);
   }
 
+  /* Used for short practical tips ("> **Tip:** …"). */
   & blockquote {
-    border-left: 3px solid var(--color-sage);
-    padding-left: 1.1em;
-    color: var(--color-muted);
-    font-style: italic;
+    border-left: 3px solid var(--color-oak);
+    border-radius: 0 0.75rem 0.75rem 0;
+    background: var(--color-oak-pale);
+    padding: 0.85em 1.15em;
+  }
+
+  & blockquote > * + * {
+    margin-top: 0.6em;
   }
 
   & hr {
@@ -228,5 +570,248 @@
     border-radius: 0.75rem;
     max-width: 100%;
     height: auto;
+  }
+
+  & figure {
+    margin-block: 2em;
+  }
+
+  & figure img {
+    width: 100%;
+    background: var(--color-oak-pale);
+  }
+
+  & figcaption {
+    margin-top: 0.65em;
+    font-size: calc(0.65rem * var(--text-scale));
+    line-height: 1.5;
+    color: var(--color-muted);
+  }
+}
+
+/*
+ * Article page layout on top of prose-tn. Sections with an image become rows (see rehypeImageRows):
+ * stacked heading, image, then text on narrow screens, two balanced columns from 48rem, with the image side
+ * alternating. Plain text keeps a comfortable line length.
+ */
+@utility prose-article {
+  & > :not(.article-row) {
+    max-width: 42rem;
+  }
+
+  & .article-row {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 3rem;
+  }
+
+  & > .article-row:first-child {
+    margin-top: 0;
+  }
+
+  & .article-row + * {
+    margin-top: 3rem;
+  }
+
+  & .article-row-media > figure {
+    margin: 0;
+  }
+
+  /*
+   * A fixed portrait frame by default; cover crops to fill it rather than distorting the image.
+   * Each article can override these through the variables set by articleImageCssVars, except
+   * the shape, size and fit on narrow screens.
+   */
+  & .article-row-media img {
+    width: var(--article-img-width, 100%);
+    height: var(--article-img-height, auto);
+    aspect-ratio: var(--article-img-ratio, 3 / 4);
+    object-fit: var(--article-img-fit, cover);
+    border-radius: var(--article-img-radius, var(--radius-card));
+    margin-inline: auto;
+    box-shadow: var(--shadow-card);
+  }
+
+  /*
+   * Stacked with its text on narrow screens, every section image takes the featured banner's
+   * frame: full width at 21:9 (as in GuideDocument), cropped to fill so it is never stretched.
+   */
+  @media (width < 48rem) {
+    & .article-row-media img {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 21 / 9;
+      object-fit: cover;
+    }
+  }
+
+  /* Every other section sits on a soft panel so each idea reads as its own block. */
+  & .article-row[data-side="image-right"] {
+    border-radius: var(--radius-card);
+    background: color-mix(in oklab, var(--color-oak-pale) 45%, var(--color-surface));
+    padding: 1.25rem;
+  }
+
+  & .article-row[data-side="image-right"] blockquote {
+    background: var(--color-surface);
+  }
+
+  & .article-row-text {
+    line-height: 1.8;
+  }
+
+  & .article-row-text > * + * {
+    margin-top: 1em;
+  }
+
+  & .article-row-text > h2 {
+    margin-top: 0;
+  }
+
+  /* Decorative accent above each section heading; it carries no text. */
+  & .article-row-text > h2::before {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 3px;
+    margin-bottom: 0.9rem;
+    border-radius: 999px;
+    background: var(--color-oak);
+  }
+
+  /* Numbered steps: a filled badge per item, drawn from the list's own numbering. */
+  & ol[role="list"] {
+    counter-reset: step;
+    list-style: none;
+    padding-left: 0;
+  }
+
+  & ol > li {
+    counter-increment: step;
+    position: relative;
+    padding-left: 2.6em;
+  }
+
+  & ol > li + li {
+    margin-top: 1.1em;
+  }
+
+  & ol > li::before {
+    content: counter(step);
+    position: absolute;
+    top: 0.2em;
+    left: 0;
+    width: 1.75em;
+    height: 1.75em;
+    border-radius: 999px;
+    background: var(--color-oak);
+    color: var(--color-surface);
+    font-family: var(--font-sans);
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1.75em;
+    text-align: center;
+  }
+
+  & ol > li > strong:first-child {
+    color: var(--color-oak-deep);
+  }
+
+  & .article-row-text > h2 + * {
+    margin-top: 0.75em;
+  }
+
+  /*
+   * On narrow screens a section reads heading, image, then text. The text wrapper drops out of
+   * the layout so its opening heading can be moved above the image without changing the markup.
+   */
+  @media (width < 48rem) {
+    & .article-row {
+      row-gap: 0;
+    }
+
+    & .article-row-text {
+      display: contents;
+    }
+
+    & .article-row-text > h2:first-child {
+      order: -1;
+      margin-bottom: 1rem;
+    }
+
+    & .article-row-media {
+      margin-bottom: 1.25rem;
+    }
+
+    & .article-row-text > h2:first-child + * {
+      margin-top: 0;
+    }
+
+    /*
+     * The soft panel runs to the screen edges, cancelling container-page's gutter, and pads by the
+     * same gutter so its heading, image and text stay in line with the rest of the article.
+     */
+    & .article-row[data-side="image-right"] {
+      margin-inline: -1.25rem;
+      padding: 2rem 1.25rem;
+      border-radius: 0;
+
+      @media (width >= 40rem) {
+        margin-inline: -2rem;
+        padding-inline: 2rem;
+      }
+    }
+  }
+
+  & .article-row-text > h3 {
+    margin-top: 1.5em;
+  }
+
+  @media (width >= 48rem) {
+    & .article-row {
+      grid-template-columns: minmax(0, min(26rem, 45%)) minmax(0, 1fr);
+      align-items: start;
+      column-gap: 2.5rem;
+      margin-top: 5rem;
+    }
+
+    & .article-row[data-side="image-right"] {
+      padding: 2.5rem;
+    }
+
+    & .article-row[data-side="image-right"] {
+      grid-template-columns: minmax(0, 1fr) minmax(0, min(26rem, 45%));
+    }
+
+    & .article-row + * {
+      margin-top: 5rem;
+    }
+
+    & .article-row[data-side="image-right"] > .article-row-media {
+      order: 2;
+    }
+
+    & .article-row-media {
+      position: sticky;
+      top: 6rem;
+    }
+
+    & .article-row-text {
+      font-size: 1rem;
+    }
+
+    & .article-row-text > h2 {
+      font-size: 1.45rem;
+    }
+  }
+
+  @media (width >= 80rem) {
+    & .article-row-text {
+      font-size: 1.0625rem;
+    }
+
+    & .article-row-text > h2 {
+      font-size: 1.625rem;
+    }
   }
 }

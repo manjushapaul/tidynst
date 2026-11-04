@@ -17,6 +17,7 @@ import {
 } from "@/server/auth/sessions";
 import { safeEqual, sha256 } from "@/server/auth/tokens";
 import {
+  changeOwnEmail,
   changeOwnPassword,
   changeUserRole,
   createFirstOwner,
@@ -302,7 +303,19 @@ describe("permissions", () => {
     expect(can(author, "guide.publish")).toBe(false);
     expect(can(author, "guide.review")).toBe(false);
     expect(can(author, "product.manage")).toBe(false);
+    expect(can(author, "topic.manage")).toBe(false);
+    expect(can(editor, "topic.manage")).toBe(true);
+    expect(can(owner, "topic.manage")).toBe(true);
     expect(can(author, "audit.view")).toBe(false);
+    expect(can(author, "analytics.view")).toBe(false);
+    expect(can(editor, "analytics.view")).toBe(true);
+    expect(can(owner, "analytics.view")).toBe(true);
+    expect(can(author, "site.manage")).toBe(false);
+    expect(can(editor, "site.manage")).toBe(true);
+    expect(can(owner, "site.manage")).toBe(true);
+    expect(can(author, "message.manage")).toBe(false);
+    expect(can(editor, "message.manage")).toBe(true);
+    expect(can(owner, "message.manage")).toBe(true);
     expect(can(author, "guide.create")).toBe(true);
   });
 
@@ -311,6 +324,59 @@ describe("permissions", () => {
     expect(canEditGuide(author, { createdBy: "a" })).toBe(true);
     expect(canEditGuide(author, { createdBy: "b" })).toBe(false);
     expect(canEditGuide({ id: "e", role: "editor" }, { createdBy: "b" })).toBe(true);
+  });
+});
+
+describe("changing your own email", () => {
+  it("re-verifies the password, keeps emails unique and signs out every other session", async () => {
+    const actor = await makeUser("editor", "email-change@example.test");
+    await makeUser("author", "email-taken@example.test");
+    const first = await createSession(t.db, actor.id, null);
+    const second = await createSession(t.db, actor.id, null);
+    const change = (newEmail: string, currentPassword = PASSWORD) =>
+      changeOwnEmail(t.db, actor, { currentPassword, newEmail, userAgent: null });
+
+    await expect(change("new-address@example.test", "wrong")).rejects.toThrow(
+      /current password is incorrect/,
+    );
+    await expect(change("not an email")).rejects.toThrow(/valid email/);
+    await expect(change(" Email-Change@Example.TEST ")).rejects.toThrow(/already your email/);
+    await expect(change("EMAIL-TAKEN@example.test")).rejects.toThrow(/already exists/);
+    expect(await validateSession(t.db, first.token)).not.toBeNull();
+
+    const replacement = await change("  New-Address@Example.TEST ");
+    const [stored] = await t.db.select().from(users).where(eq(users.id, actor.id));
+    expect(stored?.email).toBe("new-address@example.test");
+    expect(await validateSession(t.db, first.token)).toBeNull();
+    expect(await validateSession(t.db, second.token)).toBeNull();
+    expect(await validateSession(t.db, replacement.token)).not.toBeNull();
+
+    const login = (email: string) =>
+      attemptLogin(t.db, { email, password: PASSWORD, ip: null, userAgent: null });
+    expect((await login("email-change@example.test")).ok).toBe(false);
+    expect((await login("new-address@example.test")).ok).toBe(true);
+
+    const events = await t.db
+      .select()
+      .from(auditEvents)
+      .where(and(eq(auditEvents.action, "user.email_changed"), eq(auditEvents.entityId, actor.id)));
+    expect(events).toHaveLength(1);
+    expect(events[0]?.actorId).toBe(actor.id);
+    expect(JSON.stringify(events[0]?.details ?? null)).not.toContain("@");
+  });
+
+  it("refuses disabled accounts", async () => {
+    const actor = await makeUser("author", "email-disabled@example.test");
+    await t.db.update(users).set({ disabledAt: new Date() }).where(eq(users.id, actor.id));
+    await expect(
+      changeOwnEmail(t.db, actor, {
+        currentPassword: PASSWORD,
+        newEmail: "elsewhere@example.test",
+        userAgent: null,
+      }),
+    ).rejects.toThrow();
+    const [stored] = await t.db.select().from(users).where(eq(users.id, actor.id));
+    expect(stored?.email).toBe("email-disabled@example.test");
   });
 });
 

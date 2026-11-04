@@ -44,8 +44,8 @@ export function CreateUserForm({ csrf }: { csrf: string }) {
         <Field label="Role">
           {(props) => (
             <select {...props} name="role" defaultValue="author" className={inputClasses}>
-              <option value="author">Author — drafts and submits their own guides</option>
-              <option value="editor">Editor — reviews, publishes and manages products</option>
+              <option value="author">Author — drafts and submits their own articles</option>
+              <option value="editor">Editor — reviews, publishes and manages the homepage, topics and products</option>
               <option value="owner">Owner — everything, including users</option>
             </select>
           )}

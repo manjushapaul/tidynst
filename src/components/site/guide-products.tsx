@@ -3,7 +3,7 @@ import { affiliateLinksEnabled, productLinkRel } from "@/lib/affiliate";
 import { site } from "@/lib/site";
 import type { PublicProduct } from "@/server/public-content";
 
-export function GuideProducts({ products }: { products: readonly PublicProduct[] }) {
+export function GuideProducts({ products, siteName = site.name }: { products: readonly PublicProduct[]; siteName?: string }) {
   if (products.length === 0) return null;
   const affiliate = affiliateLinksEnabled();
   return (
@@ -11,10 +11,10 @@ export function GuideProducts({ products }: { products: readonly PublicProduct[]
       <h2 id="products-heading" className="text-2xl">
         Products mentioned in this guide
       </h2>
-      <p className="mt-3 rounded-xl bg-sage-pale/70 px-4 py-3 text-sm text-ink">
+      <p className="mt-3 rounded-xl bg-oak-pale/70 px-4 py-3 text-sm text-ink">
         {affiliate ? (
           <>
-            Some links below are affiliate links: if you buy through them, {site.name} may earn a commission
+            Some links below are affiliate links: if you buy through them, {siteName} may earn a commission
             at no extra cost to you. This never affects what we recommend.{" "}
           </>
         ) : (
@@ -41,7 +41,7 @@ export function GuideProducts({ products }: { products: readonly PublicProduct[]
                 <a
                   href={product.productUrl}
                   rel={productLinkRel()}
-                  className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-line-strong px-4 py-2 text-sm font-medium transition-colors hover:border-sage hover:text-sage-deep"
+                  className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-line-strong px-4 py-2 text-sm font-medium transition-colors hover:border-oak hover:text-oak-deep"
                 >
                   View{product.merchantName ? ` at ${product.merchantName}` : " product"}
                   <span aria-hidden="true">↗</span>

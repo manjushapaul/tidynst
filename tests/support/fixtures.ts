@@ -1,14 +1,15 @@
+import { ARTICLE_IMAGE_DEFAULTS } from "@/lib/content/article-image-style";
+import { FEATURED_IMAGE_DEFAULTS } from "@/lib/content/featured-image-style";
 import type { GuideContent } from "@/lib/content/guide-schema";
 
-const paragraph =
-  "Small kitchens in Indian homes often have one platform that holds the stove, the mixer grinder and daily masalas, so storage needs to keep the essentials close without crowding the cooking area.";
-
-/** Synthetic body text for tests only (never shipped as site content). */
-export function longBody(words = 320): string {
-  const sentence = paragraph.split(" ");
-  const out: string[] = [];
-  while (out.length < words) out.push(...sentence);
-  return `## Start with what you use daily\n\n${out.slice(0, words).join(" ")}\n\n## Keep heavy items low\n\nMore detail.`;
+/** Synthetic body text for tests only (never shipped as site content), within the publish length. */
+export function publishableBody(): string {
+  return [
+    "## Start with what you use daily",
+    "Keep the masala dabba, oil and salt within reach of the stove.",
+    "## Keep heavy items low",
+    "Store pots and grain tins below the counter.",
+  ].join("\n\n");
 }
 
 export function guideContent(overrides: Partial<GuideContent> = {}): GuideContent {
@@ -17,14 +18,20 @@ export function guideContent(overrides: Partial<GuideContent> = {}): GuideConten
     slug: "organise-small-kitchen-platform",
     excerpt:
       "A practical approach to clearing and arranging a compact Indian kitchen platform so daily cooking feels calmer.",
-    body: longBody(),
+    body: publishableBody(),
+    closing: "",
     category: "kitchen",
+    subcategoryId: null,
+    subcategoryGroupId: null,
     topicIds: [],
     products: [],
     seoTitle: null,
     seoDescription: null,
     featuredImageId: null,
     featuredImageAlt: null,
+    featuredImageStyle: { ...FEATURED_IMAGE_DEFAULTS },
+    faqs: [],
+    articleImageStyle: { ...ARTICLE_IMAGE_DEFAULTS },
     ...overrides,
   };
 }

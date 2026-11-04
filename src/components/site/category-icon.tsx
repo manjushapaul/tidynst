@@ -1,4 +1,49 @@
+import Image, { type StaticImageData } from "next/image";
+import bathroomIllustration from "@/assets/categories/bathroom.png";
+import bedroomWardrobeIllustration from "@/assets/categories/bedroom-wardrobe.png";
+import kitchenIllustration from "@/assets/categories/kitchen.png";
+import rentersIllustration from "@/assets/categories/renters.png";
+import smallApartmentsIllustration from "@/assets/categories/small-apartments.png";
 import type { CategorySlug } from "@/content/categories";
+
+const illustrations: Partial<Record<CategorySlug, StaticImageData>> = {
+  kitchen: kitchenIllustration,
+  bathroom: bathroomIllustration,
+  "bedroom-wardrobe": bedroomWardrobeIllustration,
+  "small-apartments": smallApartmentsIllustration,
+  renters: rentersIllustration,
+};
+
+export function hasCategoryIllustration(slug: CategorySlug): boolean {
+  return slug in illustrations;
+}
+
+/**
+ * Decorative picture for a category, scaled to fit a `size` × `size` pixel box whatever its
+ * shape. Renders nothing if the category has none.
+ */
+export function CategoryIllustration({
+  slug,
+  size,
+  className,
+}: {
+  slug: CategorySlug;
+  size: number;
+  className?: string;
+}) {
+  const image = illustrations[slug];
+  if (!image) return null;
+  const scale = size / Math.max(image.width, image.height);
+  return (
+    <Image
+      src={image}
+      alt=""
+      width={Math.round(image.width * scale)}
+      height={Math.round(image.height * scale)}
+      className={className}
+    />
+  );
+}
 
 const paths: Record<CategorySlug, React.ReactNode> = {
   kitchen: (

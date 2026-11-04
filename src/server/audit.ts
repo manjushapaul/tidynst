@@ -1,34 +1,9 @@
 import "server-only";
 import { auditEvents } from "@/db/schema";
 import type { Db } from "@/db/types";
+import type { AuditAction } from "@/lib/audit-actions";
 
-export type AuditAction =
-  | "auth.login_succeeded"
-  | "auth.login_failed"
-  | "auth.login_rate_limited"
-  | "auth.logout"
-  | "auth.session_revoked"
-  | "auth.password_changed"
-  | "user.owner_created"
-  | "user.created"
-  | "user.role_changed"
-  | "user.disabled"
-  | "user.enabled"
-  | "guide.created"
-  | "guide.saved"
-  | "guide.restored"
-  | "guide.deleted"
-  | "guide.review_requested"
-  | "guide.review_approved"
-  | "guide.review_changes_requested"
-  | "guide.review_invalidated"
-  | "guide.published"
-  | "guide.unpublished"
-  | "guide.save_conflict"
-  | "product.created"
-  | "product.updated"
-  | "media.uploaded"
-  | "media.deleted";
+export type { AuditAction } from "@/lib/audit-actions";
 
 export async function audit(
   db: Db,

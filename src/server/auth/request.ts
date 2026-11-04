@@ -30,6 +30,7 @@ export async function clearSessionCookie(): Promise<void> {
 /** The current request's session, validated once per request. */
 export const getSession = cache(async (): Promise<ValidSession | null> => {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return null;
   return validateSession(getDb(), token);
 });
 

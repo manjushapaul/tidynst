@@ -4,9 +4,9 @@ import Link from "next/link";
 import { CategoryGrid } from "@/components/site/category-grid";
 import { EmptyState, GuideGrid } from "@/components/site/guide-card";
 import { PageHeader } from "@/components/site/page-header";
-import { categories, categoryPath } from "@/content/categories";
+import { categoryPath } from "@/content/categories";
 import { pageMetadata } from "@/lib/seo/metadata";
-import { publicDb } from "@/server/loaders";
+import { loadPublicSite, publicDb } from "@/server/loaders";
 import { normaliseSearchQuery, SEARCH_QUERY_MAX, searchPublishedGuides } from "@/server/public-content";
 
 // Search result pages are never indexed and never listed in the sitemap.
@@ -23,9 +23,10 @@ export default async function SearchPage({ searchParams }: Props) {
   const raw = (await searchParams).q;
   const query = normaliseSearchQuery(Array.isArray(raw) ? raw[0] : raw);
   const results = query ? await searchPublishedGuides(await publicDb(), query) : [];
+  const home = await loadPublicSite();
   const lowered = query?.toLowerCase() ?? "";
   const matchingCategories = query
-    ? categories.filter(
+    ? home.categories.filter(
         (category) => category.name.toLowerCase().includes(lowered) || lowered.includes(category.slug),
       )
     : [];
@@ -50,11 +51,11 @@ export default async function SearchPage({ searchParams }: Props) {
             defaultValue={query ?? ""}
             maxLength={SEARCH_QUERY_MAX}
             placeholder="Try “spice storage” or “no-drill shelves”"
-            className="min-w-0 flex-1 rounded-full border border-line-strong bg-surface px-5 py-3 text-base outline-none placeholder:text-muted/70 focus:border-sage focus:ring-2 focus:ring-sage/20"
+            className="min-w-0 flex-1 rounded-full border border-line-strong bg-surface px-5 py-3 text-base outline-none placeholder:text-muted/70 focus:border-oak focus:ring-2 focus:ring-oak/20"
           />
           <button
             type="submit"
-            className="shrink-0 rounded-full bg-sage px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-sage-deep"
+            className="shrink-0 rounded-full bg-oak px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-oak-deep"
           >
             Search
           </button>
@@ -77,7 +78,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     {index ? ", " : ""}
                     <Link
                       href={categoryPath(category.slug)}
-                      className="text-sage-deep underline underline-offset-2"
+                      className="text-oak-deep underline underline-offset-2"
                     >
                       {category.name}
                     </Link>
@@ -101,7 +102,7 @@ export default async function SearchPage({ searchParams }: Props) {
         <div className="mt-14">
           <h2 className="text-2xl">Browse by room</h2>
           <div className="mt-6">
-            <CategoryGrid />
+            <CategoryGrid categories={home.categories} />
           </div>
         </div>
       </section>

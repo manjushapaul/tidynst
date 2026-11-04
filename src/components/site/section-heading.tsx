@@ -21,7 +21,7 @@ export function SectionHeading({ id, eyebrow, title, lead, action }: SectionHead
       {action ? (
         <Link
           href={action.href}
-          className="shrink-0 text-sm font-medium text-sage-deep underline-offset-4 hover:underline"
+          className="shrink-0 text-sm font-medium text-oak-deep underline-offset-4 hover:underline"
         >
           {action.label} <span aria-hidden="true">→</span>
         </Link>

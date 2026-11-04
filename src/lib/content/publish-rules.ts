@@ -1,16 +1,15 @@
-import { countWords, extractHeadings, extractLinks } from "./markdown";
-import type { GuideContent } from "./guide-schema";
+import { countCharacters, extractHeadings, extractLinks } from "./markdown";
+import { GUIDE_LIMITS, type GuideContent } from "./guide-schema";
 
 export const PUBLISH_RULES = {
   titleMin: 10,
   titleMax: 100,
-  excerptMin: 70,
-  excerptMax: 240,
+  excerptMin: 100,
+  excerptMax: GUIDE_LIMITS.excerptMax,
   metaDescriptionMin: 70,
   metaDescriptionMax: 160,
   seoTitleMin: 10,
   seoTitleMax: 65,
-  bodyMinWords: 300,
 } as const;
 
 export type PublishIssue = { field: keyof GuideContent; message: string };
@@ -22,9 +21,22 @@ export type PublishContext = {
   knownTopicIds: ReadonlySet<string>;
   /** Whether the featured image asset exists. */
   featuredImageExists: boolean;
+  /** Ids of library images that exist, checked against `/media/<id>/…` links in the body. Omit to skip. */
+  knownMediaIds?: ReadonlySet<string>;
 };
 
 const PLACEHOLDER = /\b(lorem ipsum|todo|tbd|tk tk|xxx+|placeholder text)\b/i;
+const MEDIA_LINK = /^\/media\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i;
+
+/** Library image ids linked from the body (`/media/<id>/<filename>`), lower-cased and de-duplicated. */
+export function bodyMediaIds(body: string): string[] {
+  const ids = new Set<string>();
+  for (const link of extractLinks(body)) {
+    const match = MEDIA_LINK.exec(link.url);
+    if (match?.[1]) ids.add(match[1].toLowerCase());
+  }
+  return [...ids];
+}
 
 /**
  * Stricter checks applied when publishing (drafts may be incomplete). Returns every problem so
@@ -73,14 +85,11 @@ export function publishIssues(content: GuideContent, context: PublishContext): P
     );
   }
 
-  const words = countWords(content.body);
-  if (words < PUBLISH_RULES.bodyMinWords) {
-    add("body", `The guide needs at least ${PUBLISH_RULES.bodyMinWords} words to publish (it has ${words}).`);
-  }
+  if (countCharacters(content.body) === 0) add("body", "Add the article text before publishing.");
 
   const headings = extractHeadings(content.body);
   if (headings.some((heading) => heading.depth === 1)) {
-    add("body", "Do not use a level-1 heading (#) in the body; the guide title is the page's only H1.");
+    add("body", "Do not use a level-1 heading (#) in the body; the article title is the page's only H1.");
   }
   let previousDepth = 1;
   for (const heading of headings) {
@@ -116,6 +125,13 @@ export function publishIssues(content: GuideContent, context: PublishContext): P
     if (!context.featuredImageExists) add("featuredImageId", "The featured image no longer exists.");
   } else if (content.featuredImageAlt) {
     add("featuredImageAlt", "Image alt text is set but there is no featured image.");
+  }
+
+  if (context.knownMediaIds) {
+    const known = context.knownMediaIds;
+    if (bodyMediaIds(content.body).some((id) => !known.has(id))) {
+      add("body", "An image linked in the body is no longer in the media library.");
+    }
   }
 
   for (const topicId of content.topicIds) {

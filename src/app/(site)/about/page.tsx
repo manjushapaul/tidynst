@@ -1,30 +1,35 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { StaticPage } from "@/components/site/static-page";
 import { pageMetadata } from "@/lib/seo/metadata";
 import { site } from "@/lib/site";
+import { loadPublicSite } from "@/server/loaders";
 
-export const metadata = pageMetadata({
-  title: "About TidyNest",
-  description:
-    "TidyNest publishes practical, honest guides to organising small Indian homes and rented apartments. Here is what we cover and how we work.",
-  path: "/about",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const home = await loadPublicSite();
+  return pageMetadata({
+    title: `About ${home.name}`,
+    description: `${home.name} publishes practical, honest guides to organising small Indian homes and rented apartments. Here is what we cover and how we work.`,
+    path: "/about",
+  });
+}
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const home = await loadPublicSite();
   return (
     <StaticPage
-      title="About TidyNest"
+      title={`About ${home.name}`}
       lead="Practical guides for people who live in small homes and want them to feel calmer, without a renovation budget."
       path="/about"
     >
-      <h2>Why TidyNest exists</h2>
+      <h2>Why {home.name} exists</h2>
       <p>
         Most organising advice online is written for large houses with walk-in closets and deep pantries. Many
         of us live differently: a 1BHK in a city, a rented flat where drilling is not allowed, a kitchen where
         the pressure cooker, the mixer grinder and a dozen masala dabbas share one platform.
       </p>
       <p>
-        {site.name} focuses on those homes. Our guides are written for Indian households — the rooms, the
+        {home.name} focuses on those homes. Our guides are written for Indian households — the rooms, the
         cooking, the clothing and the rental realities that come with them.
       </p>
 

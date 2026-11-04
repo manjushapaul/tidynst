@@ -1,24 +1,40 @@
-/** Decorative shelf composition for the home hero. Purely visual. */
-export function HeroArt() {
+import Image from "next/image";
+import heroImage from "@/assets/hero-small-apartment.jpg";
+import type { PublicImage } from "@/server/public-content";
+
+const BUILT_IN_ALT =
+  "A sunlit, organised small apartment with glass jars on open kitchen shelves, a tidy bathroom, an open wardrobe and a cream sofa";
+
+/** Framed photo for the home hero. A library image replaces the built-in picture when one is chosen. */
+export function HeroArt({ image }: { image?: PublicImage | null }) {
   return (
-    <div aria-hidden="true" className="relative mx-auto hidden aspect-[4/5] w-full max-w-sm lg:block">
-      <div className="absolute inset-0 rounded-[2rem] bg-sage-pale" />
-      <div className="absolute inset-x-8 top-10 bottom-10 rounded-[1.5rem] border border-sage/20 bg-surface/80" />
-      {[0, 1, 2].map((shelf) => (
-        <div
-          key={shelf}
-          className="absolute inset-x-12 h-px bg-sage/30"
-          style={{ top: `${32 + shelf * 22}%` }}
-        />
-      ))}
-      <div className="absolute top-[19%] left-[22%] h-[12%] w-[13%] rounded-t-xl rounded-b-md bg-sage/80" />
-      <div className="absolute top-[22%] left-[38%] h-[9%] w-[11%] rounded-md bg-[#c9b79c]" />
-      <div className="absolute top-[24%] left-[52%] h-[7%] w-[22%] rounded-full bg-sand ring-1 ring-line-strong" />
-      <div className="absolute top-[41%] left-[24%] h-[13%] w-[30%] rounded-lg bg-sand ring-1 ring-line-strong" />
-      <div className="absolute top-[45%] left-[58%] h-[9%] w-[9%] rounded-full bg-sage/60" />
-      <div className="absolute top-[45%] left-[69%] h-[9%] w-[9%] rounded-full bg-[#c9b79c]/80" />
-      <div className="absolute top-[64%] left-[24%] h-[10%] w-[52%] rounded-lg bg-sage-pale ring-1 ring-sage/25" />
-      <div className="absolute right-[-1.5rem] bottom-[-1.5rem] size-28 rounded-full bg-[#efe6d6] mix-blend-multiply" />
+    <div className="relative mx-auto hidden aspect-[3/4] w-full max-w-sm lg:block">
+      <div aria-hidden="true" className="absolute inset-0 rounded-[2rem] bg-oak-pale" />
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-0 size-28 hero-orbit rounded-full bg-[#e3cba6] mix-blend-multiply"
+      />
+      <div className="absolute inset-5 overflow-hidden rounded-[1.5rem] shadow-[0_22px_45px_-20px_rgb(122_92_52/0.55)] ring-1 ring-[#e3cba6]/70">
+        {image ? (
+          <Image
+            src={image.src}
+            alt={image.alt}
+            fill
+            sizes="21rem"
+            fetchPriority="high"
+            className="h-full w-full object-cover object-[50%_72%]"
+          />
+        ) : (
+          <Image
+            src={heroImage}
+            alt={BUILT_IN_ALT}
+            placeholder="blur"
+            sizes="21rem"
+            fetchPriority="high"
+            className="h-full w-full object-cover object-[50%_72%]"
+          />
+        )}
+      </div>
     </div>
   );
 }

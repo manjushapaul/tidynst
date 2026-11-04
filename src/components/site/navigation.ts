@@ -2,10 +2,10 @@ import { categories, categoryPath } from "@/content/categories";
 
 export type NavItem = { href: string; label: string };
 
-export const primaryNav: readonly NavItem[] = [
-  { href: "/guides", label: "All guides" },
-  ...categories.map((category) => ({ href: categoryPath(category.slug), label: category.navLabel })),
-];
+export const primaryNav: readonly NavItem[] = categories.map((category) => ({
+  href: categoryPath(category.slug),
+  label: category.navLabel,
+}));
 
 export const companyNav: readonly NavItem[] = [
   { href: "/about", label: "About" },

@@ -23,7 +23,7 @@ export function Pagination({
 }) {
   if (totalPages <= 1) return null;
   const linkClass =
-    "inline-flex min-w-10 items-center justify-center rounded-full border border-line bg-surface px-4 py-2 text-sm transition-colors hover:border-sage hover:text-sage-deep";
+    "inline-flex min-w-10 items-center justify-center rounded-full border border-line bg-surface px-4 py-2 text-sm transition-colors hover:border-oak hover:text-oak-deep";
   return (
     <nav aria-label="Pagination" className="mt-12 flex items-center justify-between gap-4">
       {page > 1 ? (

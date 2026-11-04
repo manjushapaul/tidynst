@@ -9,7 +9,7 @@ export function AccessDenied({
     <div className="mx-auto max-w-md py-16 text-center">
       <h1 className="text-2xl">Not available</h1>
       <p className="mt-3 text-sm text-muted">{message}</p>
-      <Link href="/admin" className="mt-6 inline-block text-sm text-sage-deep underline underline-offset-2">
+      <Link href="/admin" className="mt-6 inline-block text-sm text-oak-deep underline underline-offset-2">
         Back to the dashboard
       </Link>
     </div>

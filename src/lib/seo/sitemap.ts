@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { categoryPath, type CategorySlug } from "@/content/categories";
+import { categoryPath, guidePath, subcategoryPath, type CategorySlug } from "@/content/categories";
 import { absoluteUrl } from "@/lib/site";
 
 export const STATIC_SITEMAP_PATHS = [
@@ -14,11 +14,19 @@ export const STATIC_SITEMAP_PATHS = [
 
 export type SitemapInput = {
   indexingEnabled: boolean;
-  guides: ReadonlyArray<{ slug: string; updatedAt: Date }>;
+  guides: ReadonlyArray<{
+    slug: string;
+    category: CategorySlug | null;
+    updatedAt: Date;
+    /** Image paths on the page, listed so they can be found through Google Images. */
+    images?: readonly string[];
+  }>;
   /** Categories with at least one published guide (empty hubs are noindex). */
   categories: ReadonlyArray<{ slug: CategorySlug; updatedAt: Date }>;
   /** Topics with at least one published guide. */
   topics: ReadonlyArray<{ slug: string; updatedAt: Date }>;
+  /** Subcategories with at least one published guide. */
+  subcategories?: ReadonlyArray<{ category: CategorySlug; slug: string; updatedAt: Date }>;
 };
 
 /**
@@ -45,9 +53,14 @@ export function buildSitemap(input: SitemapInput): MetadataRoute.Sitemap {
       url: absoluteUrl(`/topics/${topic.slug}`),
       lastModified: topic.updatedAt,
     })),
+    ...(input.subcategories ?? []).map((area) => ({
+      url: absoluteUrl(subcategoryPath(area.category, area.slug)),
+      lastModified: area.updatedAt,
+    })),
     ...input.guides.map((guide) => ({
-      url: absoluteUrl(`/guides/${guide.slug}`),
+      url: absoluteUrl(guidePath(guide)),
       lastModified: guide.updatedAt,
+      ...(guide.images?.length ? { images: guide.images.map((image) => absoluteUrl(image)) } : {}),
     })),
   ];
 }

@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { guides, products, topics } from "@/db/schema";
+import { guides, mediaAssets, products, subcategoryGroups, topics, users } from "@/db/schema";
 import {
+  articleTopics,
   countPublishedGuides,
   getPublishedGuide,
   listPublishedGuides,
@@ -132,10 +133,37 @@ describe("public content queries", () => {
     expect(await searchPublishedGuides(t.db, "spice OR hooks")).toHaveLength(2);
   });
 
+  it("uses the category page sections as an article's topics", async () => {
+    const groups = await t.db
+      .select({ name: subcategoryGroups.name })
+      .from(subcategoryGroups)
+      .where(eq(subcategoryGroups.category, "small-apartments"))
+      .orderBy(asc(subcategoryGroups.position), asc(subcategoryGroups.name));
+    expect((await articleTopics(t.db, "small-apartments")).map((topic) => topic.name)).toEqual(
+      groups.map((group) => group.name),
+    );
+    expect((await articleTopics(t.db, "bathroom")).map((topic) => topic.name)).toEqual([
+      "Shelves and corner storage",
+      "Hooks and towel space",
+      "Wet-area considerations",
+      "Toiletries and cleaning supplies",
+    ]);
+    expect(await articleTopics(t.db, null)).toEqual([]);
+  });
+
   it("relates guides in the same category first", async () => {
     const guide = await getPublishedGuide(t.db, "kitchen-spice-storage");
     const related = await relatedGuides(t.db, guide!);
     expect(related.map((g) => g.slug)).toEqual(["kitchen-cabinet-order"]);
+  });
+
+  it("relates an uncategorised draft preview by shared topic, or not at all", async () => {
+    expect(
+      (await relatedGuides(t.db, { slug: "secret-draft", category: null, topicIds: [noDrillId] })).map(
+        (g) => g.slug,
+      ),
+    ).toEqual(["kitchen-spice-storage"]);
+    expect(await relatedGuides(t.db, { slug: "secret-draft", category: null, topicIds: [] })).toEqual([]);
   });
 
   it("counts published guides per topic", async () => {
@@ -144,6 +172,66 @@ describe("public content queries", () => {
     );
     expect(counts["no-drill"]).toBe(1);
     expect(counts["budget"]).toBe(0);
+  });
+});
+
+describe("body images", () => {
+  it("lists body images in the sitemap and gives the article their sizes", async () => {
+    const [owner] = await t.db.select().from(users).limit(1);
+    const [photo] = await t.db
+      .insert(mediaAssets)
+      .values({
+        filename: "shelf photo.jpg",
+        contentType: "image/jpeg",
+        byteSize: 80,
+        width: 1600,
+        height: 1200,
+        sha256: "body-image-sha",
+        data: Buffer.from("photo"),
+        altText: "Shelf",
+        uploadedBy: owner!.id,
+        variants: [
+          {
+            label: "md",
+            width: 800,
+            height: 600,
+            byteSize: 40,
+            contentType: "image/webp",
+            filename: "shelf-photo-800.webp",
+            storageKey: "k",
+            storageUrl: "https://blob.example/k",
+          },
+        ],
+      })
+      .returning();
+    const master = `/media/${photo!.id}/shelf%20photo.jpg`;
+    const variant = `/media/${photo!.id}/shelf-photo-800.webp`;
+    const missing = "/media/00000000-0000-4000-8000-000000000000/gone.jpg";
+    await insertGuide(
+      t.db,
+      owner!.id,
+      {
+        slug: "renters-shelf-photos",
+        category: "renters",
+        body: [
+          `## Shelves\n\n![Shelf](${variant}#width=50)`,
+          `![Shelf](${master} "Caption")`,
+          `![Gone](${missing})`,
+          `A [plain link](${master}) is not an image.`,
+          `![Shelf again](${variant})`,
+        ].join("\n\n"),
+      },
+      { published: true },
+    );
+
+    const entry = (await listSitemapGuides(t.db)).find((guide) => guide.slug === "renters-shelf-photos");
+    expect(entry?.images).toEqual([variant, master]);
+
+    const guide = await getPublishedGuide(t.db, "renters-shelf-photos");
+    expect(guide?.bodyImageSizes).toEqual({
+      [`${photo!.id}/shelf photo.jpg`]: { width: 1600, height: 1200 },
+      [`${photo!.id}/shelf-photo-800.webp`]: { width: 800, height: 600 },
+    });
   });
 });
 

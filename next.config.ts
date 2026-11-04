@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import { draftPreviewHeaders } from "./src/lib/http/preview-headers";
+import { launchConfigProblem } from "./src/lib/seo/indexing";
+
+const launchProblem = launchConfigProblem(process.env);
+if (launchProblem) throw new Error(launchProblem);
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -18,12 +23,15 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     formats: ["image/avif", "image/webp"],
+    // Matches the media route's public max-age, so optimized copies are not kept for hours after unpublishing.
+    minimumCacheTTL: 300,
     localPatterns: [{ pathname: "/media/**" }, { pathname: "/images/**" }],
   },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      { source: "/admin/guides/:id/preview", headers: [...draftPreviewHeaders] },
     ];
   },
 };

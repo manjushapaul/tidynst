@@ -41,13 +41,24 @@ export function extractHeadings(markdown: string): Heading[] {
   return headings;
 }
 
-export function countWords(markdown: string): number {
-  const text = proseLines(markdown)
+/** Readable prose: no code blocks, images, link targets or Markdown syntax; whitespace collapsed. */
+function proseText(markdown: string): string {
+  return proseLines(markdown)
     .join(" ")
     .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[#>*_`~|-]/g, " ");
-  return text.split(/\s+/).filter(Boolean).length;
+    .replace(/[#>*_`~|-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function countWords(markdown: string): number {
+  return proseText(markdown).split(" ").filter(Boolean).length;
+}
+
+/** Characters a reader sees, counting each run of whitespace as one space. */
+export function countCharacters(markdown: string): number {
+  return proseText(markdown).length;
 }
 
 export function readingMinutes(markdown: string): number {

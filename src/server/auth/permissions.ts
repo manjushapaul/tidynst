@@ -9,10 +9,14 @@ export type Permission =
   | "guide.publish"
   | "guide.delete"
   | "product.manage"
+  | "topic.manage"
   | "media.upload"
   | "media.delete"
   | "user.manage"
-  | "audit.view";
+  | "audit.view"
+  | "analytics.view"
+  | "message.manage"
+  | "site.manage";
 
 const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
   owner: new Set<Permission>([
@@ -24,10 +28,14 @@ const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
     "guide.publish",
     "guide.delete",
     "product.manage",
+    "topic.manage",
     "media.upload",
     "media.delete",
     "user.manage",
     "audit.view",
+    "analytics.view",
+    "message.manage",
+    "site.manage",
   ]),
   editor: new Set<Permission>([
     "guide.create",
@@ -38,9 +46,13 @@ const ROLE_PERMISSIONS: Record<Role, ReadonlySet<Permission>> = {
     "guide.publish",
     "guide.delete",
     "product.manage",
+    "topic.manage",
     "media.upload",
     "media.delete",
     "audit.view",
+    "analytics.view",
+    "message.manage",
+    "site.manage",
   ]),
   author: new Set<Permission>(["guide.create", "guide.editOwn", "guide.submit", "media.upload"]),
 };

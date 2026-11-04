@@ -11,6 +11,8 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { assertDatabaseTarget } from "../../src/db/config";
 import * as schema from "../../src/db/schema";
+import { ARTICLE_IMAGE_DEFAULTS } from "../../src/lib/content/article-image-style";
+import { FEATURED_IMAGE_DEFAULTS } from "../../src/lib/content/featured-image-style";
 import { guideContentHash } from "../../src/lib/content/content-hash";
 import type { GuideContent } from "../../src/lib/content/guide-schema";
 import { hashPassword } from "../../src/server/auth/password";
@@ -52,23 +54,23 @@ function solidPng(width: number, height: number, rgb: [number, number, number]):
   ]);
 }
 
-const para = (topic: string) =>
-  `This is synthetic QA text about ${topic}. It exists only to check typography, spacing and layout on the local QA database, and it is never published on the real site. `.repeat(
-    4,
-  );
+const LOREM =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+const para = () => `${LOREM} ${LOREM}`;
 
 function body(topic: string): string {
   return [
     `## Why ${topic} matters in a small home`,
-    para(topic),
+    para(),
     `## A simple way to start`,
-    para(topic),
+    para(),
     "- Clear one shelf at a time\n- Keep daily items within reach\n- Store heavy things low",
     `### Check before you buy`,
-    para(topic),
+    para(),
     `## Keeping it tidy`,
-    para(topic),
-    "> Synthetic QA quote used to check blockquote styling.",
+    para(),
+    "> Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
   ].join("\n\n");
 }
 
@@ -101,14 +103,14 @@ async function main() {
     const [image] = await db
       .insert(mediaAssets)
       .values({
-        filename: "qa-sage-placeholder.png",
+        filename: "sage-placeholder.png",
         contentType: "image/png",
         byteSize: png.byteLength,
         width: 1200,
         height: 750,
         sha256: createHash("sha256").update(png).digest("hex"),
         data: png,
-        altText: "Plain pale sage placeholder image used for QA",
+        altText: "Plain pale sage placeholder image",
         uploadedBy: owner!.id,
       })
       .returning();
@@ -116,12 +118,12 @@ async function main() {
     const [product] = await db
       .insert(products)
       .values({
-        slug: "qa-synthetic-rack",
-        name: "QA synthetic rack",
-        brand: "QA Brand",
-        summary: "Synthetic QA product used to check the product card layout.",
+        slug: "sample-rack",
+        name: "Sample rack",
+        brand: "Example Brand",
+        summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.",
         merchantName: "Example Shop",
-        productUrl: "https://shop.example.test/qa-rack",
+        productUrl: "https://shop.example.test/sample-rack",
         verifiedOn: "2026-10-13",
         status: "active",
         createdBy: owner!.id,
@@ -130,12 +132,12 @@ async function main() {
       .returning();
 
     const items: Array<{ content: GuideContent; published: boolean; daysAgo: number }> = [
-      ["QA: Spice storage for a compact kitchen", "kitchen", ["no-drill", "space-saving"], true, 1, true],
-      ["QA: Cabinet order without renovation", "kitchen", ["budget"], true, 3, false],
-      ["QA: Hooks and shelves for a wet bathroom", "bathroom", ["no-drill"], true, 5, false],
-      ["QA: Saree storage in a steel almirah", "bedroom-wardrobe", ["space-saving"], true, 8, false],
-      ["QA: Renter-friendly entryway", "renters", ["renter-friendly", "no-drill"], true, 12, false],
-      ["QA: Unpublished draft that must stay hidden", "kitchen", [], false, 0, false],
+      ["Spice storage for a compact kitchen", "kitchen", ["no-drill", "space-saving"], true, 1, true],
+      ["Cabinet order without renovation", "kitchen", ["budget"], true, 3, false],
+      ["Hooks and shelves for a wet bathroom", "bathroom", ["no-drill"], true, 5, false],
+      ["Saree storage in a steel almirah", "bedroom-wardrobe", ["space-saving"], true, 8, false],
+      ["Renter-friendly entryway", "renters", ["renter-friendly", "no-drill"], true, 12, false],
+      ["Unpublished draft that must stay hidden", "kitchen", [], false, 0, false],
     ].map(([title, category, topicSlugs, published, daysAgo, withExtras]) => {
       const slug = String(title)
         .toLowerCase()
@@ -147,15 +149,22 @@ async function main() {
         content: {
           title: String(title),
           slug,
-          excerpt: `Synthetic QA summary for “${String(title)}”, used only to check layouts on the local QA database.`,
-          body: body(String(title).replace("QA: ", "").toLowerCase()),
+          excerpt:
+            "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+          body: body(String(title).toLowerCase()),
+          closing: "",
           category: category as GuideContent["category"],
+          subcategoryId: null,
+          subcategoryGroupId: null,
           topicIds: (topicSlugs as string[]).map(topicId),
-          products: withExtras ? [{ productId: product!.id, note: "Synthetic note for QA." }] : [],
+          products: withExtras ? [{ productId: product!.id, note: "Lorem ipsum dolor sit amet." }] : [],
           seoTitle: null,
           seoDescription: null,
           featuredImageId: withExtras ? image!.id : null,
           featuredImageAlt: null,
+          faqs: [],
+          articleImageStyle: { ...ARTICLE_IMAGE_DEFAULTS },
+          featuredImageStyle: { ...FEATURED_IMAGE_DEFAULTS },
         },
       };
     });

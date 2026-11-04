@@ -4,7 +4,10 @@ import { notFound } from "next/navigation";
 import { EmptyState, GuideGrid } from "@/components/site/guide-card";
 import { PageHeader } from "@/components/site/page-header";
 import { Pagination, pageHref, parsePage } from "@/components/site/pagination";
+import { JsonLd } from "@/components/seo/json-ld";
+import { guidePath } from "@/content/categories";
 import { pageMetadata } from "@/lib/seo/metadata";
+import { collectionPageJsonLd } from "@/lib/seo/structured-data";
 import { loadTopic, publicDb } from "@/server/loaders";
 import { countPublishedGuides, listPublishedGuides } from "@/server/public-content";
 
@@ -44,6 +47,17 @@ export default async function TopicPage({ params, searchParams }: Props) {
 
   return (
     <>
+      {guides.length ? (
+        <JsonLd
+          data={collectionPageJsonLd({
+            name: `${topic.name} organising guides`,
+            description: topic.description,
+            path: pageHref(path, page),
+            items: guides.map((guide) => ({ name: guide.title, path: guidePath(guide) })),
+            firstPosition: (page - 1) * PAGE_SIZE + 1,
+          })}
+        />
+      ) : null}
       <PageHeader
         eyebrow="Topic"
         title={topic.name}

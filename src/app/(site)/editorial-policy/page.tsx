@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { StaticPage } from "@/components/site/static-page";
 import { pageMetadata } from "@/lib/seo/metadata";
-import { site } from "@/lib/site";
+import { loadPublicSite } from "@/server/loaders";
 
 export const metadata = pageMetadata({
   title: "Editorial policy",
@@ -10,7 +10,8 @@ export const metadata = pageMetadata({
   path: "/editorial-policy",
 });
 
-export default function EditorialPolicyPage() {
+export default async function EditorialPolicyPage() {
+  const home = await loadPublicSite();
   return (
     <StaticPage
       title="Editorial policy"
@@ -35,7 +36,7 @@ export default function EditorialPolicyPage() {
 
       <h2>Reviewed before publishing</h2>
       <p>
-        Each guide is reviewed by a member of the {site.name} team before it is published. If a guide is
+        Each guide is reviewed by a member of the {home.name} team before it is published. If a guide is
         changed after it has been reviewed, it must be reviewed again before the change goes live.
       </p>
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { StaticPage } from "@/components/site/static-page";
 import { pageMetadata } from "@/lib/seo/metadata";
-import { site } from "@/lib/site";
+import { loadPublicSite } from "@/server/loaders";
 
 export const metadata = pageMetadata({
   title: "Affiliate disclosure",
@@ -10,17 +10,18 @@ export const metadata = pageMetadata({
   path: "/affiliate-disclosure",
 });
 
-export default function AffiliateDisclosurePage() {
+export default async function AffiliateDisclosurePage() {
+  const home = await loadPublicSite();
   return (
     <StaticPage
       title="Affiliate disclosure"
-      lead="An honest account of how TidyNest handles shopping links and money."
+      lead={`An honest account of how ${home.name} handles shopping links and money.`}
       path="/affiliate-disclosure"
       lastUpdated="13 October 2026"
     >
       <h2>Where things stand today</h2>
       <p>
-        {site.name} does not currently earn commission from any links on this site, and we are not a member of
+        {home.name} does not currently earn commission from any links on this site, and we are not a member of
         any affiliate programme. When a guide links to a product or shop, it is because we think the link is
         useful, and we receive nothing if you buy.
       </p>

@@ -4,12 +4,16 @@ import { notFound } from "next/navigation";
 import { EmptyState, GuideGrid } from "@/components/site/guide-card";
 import { PageHeader } from "@/components/site/page-header";
 import { Pagination, pageHref, parsePage } from "@/components/site/pagination";
-import { categories, categoryPath } from "@/content/categories";
+import { JsonLd } from "@/components/seo/json-ld";
+import { categoryPath, guidePath } from "@/content/categories";
 import { pageMetadata } from "@/lib/seo/metadata";
-import { publicDb } from "@/server/loaders";
+import { collectionPageJsonLd } from "@/lib/seo/structured-data";
+import { loadPublicSite, publicDb } from "@/server/loaders";
 import { countPublishedGuides, listPublishedGuides } from "@/server/public-content";
 
 const PAGE_SIZE = 12;
+const DESCRIPTION =
+  "Every TidyNest guide to organising small Indian homes: kitchens, bathrooms, wardrobes, compact apartments and rented flats.";
 
 type Props = { searchParams: Promise<{ page?: string | string[] }> };
 
@@ -18,8 +22,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const total = await countPublishedGuides(await publicDb());
   return pageMetadata({
     title: page > 1 ? `All guides — page ${page}` : "All guides",
-    description:
-      "Every TidyNest guide to organising small Indian homes: kitchens, bathrooms, wardrobes, compact apartments and rented flats.",
+    description: DESCRIPTION,
     path: pageHref("/guides", page),
     noindex: total === 0,
   });
@@ -33,9 +36,21 @@ export default async function GuidesPage({ searchParams }: Props) {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   if (page > totalPages) notFound();
   const guides = await listPublishedGuides(db, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE });
+  const home = await loadPublicSite();
 
   return (
     <>
+      {guides.length ? (
+        <JsonLd
+          data={collectionPageJsonLd({
+            name: "All guides",
+            description: DESCRIPTION,
+            path: pageHref("/guides", page),
+            items: guides.map((guide) => ({ name: guide.title, path: guidePath(guide) })),
+            firstPosition: (page - 1) * PAGE_SIZE + 1,
+          })}
+        />
+      ) : null}
       <PageHeader
         eyebrow="Guides"
         title="All guides"
@@ -46,11 +61,11 @@ export default async function GuidesPage({ searchParams }: Props) {
         ]}
       >
         <ul className="mt-8 flex flex-wrap gap-2" aria-label="Browse by category">
-          {categories.map((category) => (
+          {home.categories.map((category) => (
             <li key={category.slug}>
               <Link
                 href={categoryPath(category.slug)}
-                className="inline-block rounded-full border border-line bg-surface px-4 py-2 text-sm transition-colors hover:border-sage hover:text-sage-deep"
+                className="inline-block rounded-full border border-line bg-surface px-4 py-2 text-sm transition-colors hover:border-oak hover:text-oak-deep"
               >
                 {category.name}
               </Link>

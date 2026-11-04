@@ -1,5 +1,6 @@
 import "server-only";
-import { and, count, desc, eq, isNotNull, isNull, type SQL, sql } from "drizzle-orm";
+import { access, constants, statfs } from "node:fs/promises";
+import { and, count, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import { auditEvents, guides, mediaAssets, products, users } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { type Actor, can } from "@/server/auth/permissions";
@@ -11,6 +12,16 @@ export type DashboardStats = {
   products: { active: number; total: number } | null;
   media: number;
   users: { active: number; disabled: number } | null;
+};
+
+export type StorageOverview = {
+  /** Total size of this Postgres database, including images, revisions and indexes. */
+  databaseBytes: number;
+  /** Sum of uploaded image file sizes (what each upload contributes). */
+  mediaBytes: number;
+  mediaFiles: number;
+  /** Free space on the volume that holds the database files, when this host can see it. */
+  disk: { freeBytes: number; totalBytes: number } | null;
 };
 
 async function countWhere(db: Db, where: SQL | undefined): Promise<number> {
@@ -98,4 +109,47 @@ export async function recentActivity(db: Db, actor: Actor, limit = 8) {
     .leftJoin(users, eq(auditEvents.actorId, users.id))
     .orderBy(desc(auditEvents.id))
     .limit(limit);
+}
+
+async function diskForDataDirectory(dataDirectory: string | null): Promise<StorageOverview["disk"]> {
+  if (!dataDirectory || !dataDirectory.startsWith("/")) return null;
+  try {
+    await access(dataDirectory, constants.R_OK);
+    const stats = await statfs(dataDirectory);
+    const block = Number(stats.bsize);
+    return {
+      freeBytes: Number(stats.bavail) * block,
+      totalBytes: Number(stats.blocks) * block,
+    };
+  } catch {
+    // Hosted Postgres (or a path this app process cannot read): only DB figures are available.
+    return null;
+  }
+}
+
+/** Database size, image library size, and free disk when the data directory is local. */
+export async function storageOverview(db: Db): Promise<StorageOverview> {
+  const [sizeResult, [mediaRow]] = await Promise.all([
+    db.execute(sql`
+      select
+        pg_database_size(current_database()) as database_bytes,
+        current_setting('data_directory', true) as data_directory
+    `),
+    db
+      .select({
+        mediaBytes: sql<string | number>`coalesce(sum(${mediaAssets.byteSize}), 0)`,
+        mediaFiles: count(),
+      })
+      .from(mediaAssets),
+  ]);
+
+  const sizeRow = (
+    sizeResult as { rows: Array<{ database_bytes: string | number; data_directory: string | null }> }
+  ).rows[0];
+  const databaseBytes = Number(sizeRow?.database_bytes ?? 0);
+  const mediaBytes = Number(mediaRow?.mediaBytes ?? 0);
+  const mediaFiles = Number(mediaRow?.mediaFiles ?? 0);
+  const disk = await diskForDataDirectory(sizeRow?.data_directory ?? null);
+
+  return { databaseBytes, mediaBytes, mediaFiles, disk };
 }

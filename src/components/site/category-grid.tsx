@@ -15,14 +15,14 @@ export function CategoryGrid({
 }) {
   const Heading = headingLevel;
   return (
-    <ul className="grid gap-5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
+    <ul className="grid gap-5 max-[500px]:grid-cols-1 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-4">
       {categories.map((category) => (
         <li key={category.slug}>
           <Link
             href={categoryPath(category.slug)}
-            className="group flex h-full flex-col overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card) transition-[box-shadow,border-color,transform] duration-300 ease-(--ease-gentle) hover:-translate-y-1 hover:border-oak/35 hover:shadow-(--shadow-card-hover)"
+            className="group flex h-full max-[500px]:flex-row flex-col overflow-hidden rounded-(--radius-card) border border-line bg-surface shadow-(--shadow-card) transition-[box-shadow,border-color,transform] duration-300 ease-(--ease-gentle) hover:-translate-y-1 hover:border-oak/35 hover:shadow-(--shadow-card-hover)"
           >
-            <span className="relative flex aspect-[5/4] items-center justify-center bg-gradient-to-b from-sand/80 to-surface px-4 py-5">
+            <span className="relative flex aspect-[5/4] items-center justify-center bg-gradient-to-b from-sand/80 to-surface px-4 py-5 max-[500px]:aspect-auto max-[500px]:w-1/2 max-[500px]:shrink-0 max-[500px]:px-2">
               <span
                 aria-hidden="true"
                 className=""
@@ -33,7 +33,7 @@ export function CategoryGrid({
                   alt={category.image.alt}
                   width={category.image.width}
                   height={category.image.height}
-                  className="relative max-h-32 w-auto object-contain drop-shadow-[0_10px_18px_rgb(106_78_51/0.18)] transition-transform duration-500 ease-(--ease-gentle) group-hover:-translate-y-1 group-hover:scale-[1.04]"
+                  className="relative max-h-32 w-auto object-contain drop-shadow-[0_10px_18px_rgb(106_78_51/0.18)] max-[500px]:max-w-full transition-transform duration-500 ease-(--ease-gentle) group-hover:-translate-y-1 group-hover:scale-[1.04]"
                 />
               ) : hasCategoryIllustration(category.slug) ? (
                 <CategoryIllustration
@@ -47,7 +47,7 @@ export function CategoryGrid({
                 </span>
               )}
             </span>
-            <span className="flex flex-1 flex-col px-5 pt-4 pb-5">
+            <span className="flex flex-1 flex-col px-5 pt-4 pb-5 max-[500px]:min-w-0 max-[500px]:px-4">
               <Heading className="text-xl leading-snug">{category.name}</Heading>
               <p className="mt-2 text-sm leading-relaxed text-muted">
                 {category.covers.slice(0, 2).join(" · ")}

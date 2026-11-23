@@ -15,7 +15,7 @@ export function CategoryGrid({
 }) {
   const Heading = headingLevel;
   return (
-    <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
+    <ul className="grid gap-5 grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 lg:gap-4">
       {categories.map((category) => (
         <li key={category.slug}>
           <Link
@@ -25,7 +25,7 @@ export function CategoryGrid({
             <span className="relative flex aspect-[5/4] items-center justify-center bg-gradient-to-b from-sand/80 to-surface px-4 py-5">
               <span
                 aria-hidden="true"
-                className="absolute inset-x-6 bottom-3 h-2 rounded-full bg-oak/8 blur-[2px] transition-opacity duration-300 group-hover:opacity-70"
+                className=""
               />
               {category.image ? (
                 <Image

@@ -62,7 +62,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="latest-heading" className="container-page pb-16 sm:pb-20">
+      <section aria-labelledby="latest-heading" className="container-page pb-16 sm:pb-20  max-[1024px]:pt-7" >
         <SectionHeading
           id="latest-heading"
           eyebrow={home.latest.eyebrow}

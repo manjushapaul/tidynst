@@ -30,9 +30,9 @@ export default async function HomePage() {
           websiteJsonLd({ name: home.name, description: home.description }),
         ]}
       />
-      <section className="overflow-hidden">
-        <div className="container-page grid items-center gap-14 py-16 sm:py-20 lg:grid-cols-[1.2fr_1fr] lg:py-24">
-          <div>
+      <section className="overflow-hidden home-hero">
+        <div className="container-page home-hero__layout grid items-center gap-14 py-16 sm:py-20 lg:grid-cols-[1.2fr_1fr] lg:py-24">
+          <div className="home-hero__copy">
             <p className="eyebrow">{home.hero.eyebrow}</p>
             <h1 className="mt-4 text-[calc(2.6rem*var(--text-scale))] leading-[1.04] sm:text-6xl">
               {home.hero.title}

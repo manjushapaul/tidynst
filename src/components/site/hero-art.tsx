@@ -8,19 +8,19 @@ const BUILT_IN_ALT =
 /** Framed photo for the home hero. A library image replaces the built-in picture when one is chosen. */
 export function HeroArt({ image }: { image?: PublicImage | null }) {
   return (
-    <div className="relative mx-auto hidden aspect-[3/4] w-full max-w-sm lg:block">
-      <div aria-hidden="true" className="absolute inset-0 rounded-[2rem] bg-oak-pale" />
+    <div className="relative mx-auto hidden aspect-[3/4] w-full max-w-sm lg:block home-hero__art ">
+      <div aria-hidden="true" className="absolute inset-0 rounded-[2rem] bg-oak-pale home-hero__decoration" />
       <div
         aria-hidden="true"
-        className="absolute top-0 left-0 size-28 hero-orbit rounded-full bg-[#e3cba6] mix-blend-multiply"
+        className="absolute top-0 left-0 size-28 hero-orbit rounded-full bg-[#e3cba6] mix-blend-multiply home-hero__decoration"
       />
-      <div className="absolute inset-5 overflow-hidden rounded-[1.5rem] shadow-[0_22px_45px_-20px_rgb(122_92_52/0.55)] ring-1 ring-[#e3cba6]/70">
+      <div className="absolute inset-5 overflow-hidden rounded-[1.5rem] shadow-[0_22px_45px_-20px_rgb(122_92_52/0.55)] ring-1 ring-[#e3cba6]/70 home-hero__photo">
         {image ? (
           <Image
             src={image.src}
             alt={image.alt}
             fill
-            sizes="21rem"
+            sizes="(min-width: 1024px) 21rem, 100vw"
             fetchPriority="high"
             className="h-full w-full object-cover object-[50%_72%]"
           />

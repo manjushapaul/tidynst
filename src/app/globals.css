@@ -853,7 +853,7 @@
   }
 
   .home-hero .home-hero__photo img {
-    object-position: 50% 68%;
+    object-position: right;
   }
 
   .home-hero .home-hero__art::after {
@@ -924,7 +924,7 @@
   }
 
   .home-hero .home-hero__photo img {
-    object-position: 50% 72%;
+    object-position: right;
   }
 
   .home-hero .home-hero__art::after {

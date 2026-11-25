@@ -37,7 +37,7 @@ export async function updateCategoryIntroAction(
     await updateCategoryIntro(getDb(), session.user, field(formData, "category"), field(formData, "intro"));
     refreshAdmin();
     revalidatePath("/");
-    return { ok: true, message: "Description saved." };
+    return { ok: true, message: "Category saved." };
   } catch (error) {
     return actionError(error);
   }
@@ -50,6 +50,7 @@ export async function createGroupAction(_previous: ActionState, formData: FormDa
       category: field(formData, "category"),
       name: field(formData, "name"),
       description: field(formData, "description"),
+      iconMediaId: field(formData, "iconMediaId") || null,
     });
     refreshAdmin();
     return { ok: true, message: "Section added." };
@@ -64,6 +65,7 @@ export async function updateGroupAction(_previous: ActionState, formData: FormDa
     await updateGroup(getDb(), session.user, field(formData, "id"), {
       name: field(formData, "name"),
       description: field(formData, "description"),
+      iconMediaId: field(formData, "iconMediaId") || null,
     });
     refreshAdmin();
     return { ok: true, message: "Section saved." };

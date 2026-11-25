@@ -9,6 +9,7 @@ import {
   homepageSettings,
   mediaAssets,
   products,
+  subcategoryGroups,
   topics,
   users,
   type GuideFaq,
@@ -586,7 +587,7 @@ export type MediaSummary = {
 };
 
 /** `published`: on a live article. `homepage`: logo, hero or category card. `draft`: in another article's current draft. */
-export type MediaUse = "published" | "homepage" | "draft";
+export type MediaUse = "published" | "homepage" | "draft" | "category";
 
 // Qualify media_assets.id. An unqualified "id" inside the subquery binds to guides.id or
 // guide_revisions.id, so a referenced file would look unused.
@@ -597,6 +598,9 @@ function mediaUsedBy(editingGuideId: string | null) {
       select 1 from ${guides} g join ${guideRevisions} r on r.id = g.published_revision_id
       where r.featured_image_id = "media_assets"."id" or r.body like ${path}
     ) then 'published'
+    when exists (
+      select 1 from ${subcategoryGroups} sg where sg.icon_media_id = "media_assets"."id"
+    ) then 'category'
     when exists (
       select 1 from ${homepageSettings} h
       where h.id = 'site'

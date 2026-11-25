@@ -32,6 +32,7 @@ export const groupFieldsSchema = z
   .object({
     name: nameSchema,
     description: descriptionSchema,
+    iconMediaId: z.uuid().nullable().optional().default(null),
   })
   .strict();
 

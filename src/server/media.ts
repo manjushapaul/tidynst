@@ -2,7 +2,14 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
-import { guideRevisions, guides, homepageSettings, mediaAssets, type MediaVariantRecord } from "@/db/schema";
+import {
+  guideRevisions,
+  guides,
+  homepageSettings,
+  mediaAssets,
+  subcategoryGroups,
+  type MediaVariantRecord,
+} from "@/db/schema";
 import { HOMEPAGE_ID, homepageMediaIds, type HomepageContent } from "@/lib/content/homepage-schema";
 import type { Db } from "@/db/types";
 import { mediaPath } from "@/server/public-content";
@@ -47,13 +54,15 @@ export type MediaReferenceReport = {
   revisionGuideIds: string[];
   /** The homepage, header logo or a category card still uses this file. */
   homepage: boolean;
+  /** A public subcategory button still uses this file. */
+  category: boolean;
 };
 
 /** Every guide that still points at this asset, plus the homepage when it uses the file. */
 export async function findMediaReferences(db: Db, mediaId: string): Promise<MediaReferenceReport> {
   const pattern = mediaPathLike(mediaId);
   const id = mediaId.toLowerCase();
-  const [published, drafts, revisions, homepage] = await Promise.all([
+  const [published, drafts, revisions, homepage, category] = await Promise.all([
     db
       .select({ id: guides.id })
       .from(guides)
@@ -72,6 +81,7 @@ export async function findMediaReferences(db: Db, mediaId: string): Promise<Medi
       .from(homepageSettings)
       .where(eq(homepageSettings.id, HOMEPAGE_ID))
       .limit(1),
+    db.select({ id: subcategoryGroups.id }).from(subcategoryGroups).where(eq(subcategoryGroups.iconMediaId, id)),
   ]);
   const content = homepage[0]?.content;
   return {
@@ -79,12 +89,14 @@ export async function findMediaReferences(db: Db, mediaId: string): Promise<Medi
     draftGuideIds: [...new Set(drafts.map((row) => row.id))],
     revisionGuideIds: [...new Set(revisions.map((row) => row.guideId))],
     homepage: content ? homepageMediaIds(content as HomepageContent).includes(id) : false,
+    category: category.length > 0,
   };
 }
 
 function referencesBlockDeletion(refs: MediaReferenceReport): boolean {
   return (
     refs.homepage ||
+    refs.category ||
     refs.publishedGuideIds.length > 0 ||
     refs.draftGuideIds.length > 0 ||
     refs.revisionGuideIds.length > 0
@@ -94,11 +106,21 @@ function referencesBlockDeletion(refs: MediaReferenceReport): boolean {
 function mediaInUseMessage(refs: MediaReferenceReport): string {
   if (
     refs.homepage &&
+    !refs.category &&
     refs.publishedGuideIds.length === 0 &&
     refs.draftGuideIds.length === 0 &&
     refs.revisionGuideIds.length === 0
   ) {
     return "This image is used on the homepage. Choose a different logo or photo there before deleting it.";
+  }
+  if (
+    refs.category &&
+    !refs.homepage &&
+    refs.publishedGuideIds.length === 0 &&
+    refs.draftGuideIds.length === 0 &&
+    refs.revisionGuideIds.length === 0
+  ) {
+    return "This image is used as a subcategory icon. Choose another icon before deleting it.";
   }
   return "This image is still used by an article or revision. Remove it from every draft and published page before deleting it.";
 }

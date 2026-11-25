@@ -361,6 +361,7 @@ export const subcategoryGroups = pgTable(
     slug: text("slug").notNull(),
     name: text("name").notNull(),
     description: text("description").notNull(),
+    iconMediaId: uuid("icon_media_id").references(() => mediaAssets.id, { onDelete: "set null" }),
     position: integer("position").notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

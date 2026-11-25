@@ -7,13 +7,14 @@ export type PickerAsset = {
   height: number;
   byteSize?: number;
   /** Where the image is still referenced: a live article, or another article's draft. */
-  usedBy?: "published" | "homepage" | "draft" | null;
+  usedBy?: "published" | "homepage" | "draft" | "category" | null;
 };
 
 export const MEDIA_USE_LABELS = {
   published: "On a published article — cannot delete",
   homepage: "On the homepage — cannot delete",
   draft: "In another article's draft — cannot delete",
+  category: "Used as a subcategory icon — cannot delete",
 } as const;
 
 export const MEDIA_DELETE_BLOCKED = {
@@ -21,6 +22,7 @@ export const MEDIA_DELETE_BLOCKED = {
     "This image is on a published article. Remove it from the live page (and any drafts or revisions) before deleting it.",
   homepage: "This image is used on the homepage. Choose a different logo or photo there before deleting it.",
   draft: "This image is in another article's draft. Remove it from that draft before deleting it.",
+  category: "This image is used as a subcategory icon. Choose another icon before deleting it.",
   here: "This image is used in this article. Remove it here and save before deleting it from the library.",
 } as const;
 

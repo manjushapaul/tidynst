@@ -1,6 +1,6 @@
 import "server-only";
 import { eq, ilike, or } from "drizzle-orm";
-import { guideRevisions, guides, homepageSettings } from "@/db/schema";
+import { guideRevisions, guides, homepageSettings, subcategoryGroups } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { HOMEPAGE_ID, homepageMediaIds, type HomepageContent } from "@/lib/content/homepage-schema";
 import { bodyMediaIds } from "@/lib/content/publish-rules";
@@ -44,6 +44,14 @@ export async function isPublishedMedia(db: Db, mediaId: string, now = Date.now()
   let visible = rows.some(
     (row) => row.featuredImageId?.toLowerCase() === id || bodyMediaIds(row.body).includes(id),
   );
+  if (!visible) {
+    const [group] = await db
+      .select({ id: subcategoryGroups.id })
+      .from(subcategoryGroups)
+      .where(eq(subcategoryGroups.iconMediaId, id))
+      .limit(1);
+    visible = Boolean(group);
+  }
   if (!visible) {
     const [home] = await db
       .select({ content: homepageSettings.content })

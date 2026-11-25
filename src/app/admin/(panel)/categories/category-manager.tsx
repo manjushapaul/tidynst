@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type ReactNode, useActionState, useEffect, useId, useRef } from "react";
 import { ActionForm } from "@/components/admin/action-form";
 import { CsrfField, Field, FormMessage, inputClasses, SubmitButton } from "@/components/admin/form";
+import { SubcategoryIconUpload } from "@/components/admin/subcategory-icon-upload";
 import { categoryPath, subcategoryPath, type CategorySlug } from "@/content/categories";
 import { cn } from "@/lib/cn";
 import { HOMEPAGE_LIMITS } from "@/lib/content/homepage-schema";
@@ -156,7 +157,7 @@ function SubcategoryCard({
 
       <div className="grid gap-6 border-t border-line px-5 py-5">
         <SavedForm
-          key={`${group.id}:${group.name}:${group.description}`}
+          key={`${group.id}:${group.name}:${group.description}:${group.iconMediaId ?? ""}`}
           action={updateGroupAction}
           csrf={csrf}
           className="grid gap-3"
@@ -164,23 +165,31 @@ function SubcategoryCard({
           {(state) => (
             <>
               <input type="hidden" name="id" value={group.id} />
-              <Field
-                label="Subcategory name"
-                error={state?.fieldErrors?.name}
-                hint={subcategoryPath(category, group.slug)}
-              >
-                {(props) => (
-                  <input
-                    {...props}
-                    name="name"
-                    required
-                    minLength={SUBCATEGORY_LIMITS.nameMin}
-                    maxLength={SUBCATEGORY_LIMITS.nameMax}
-                    defaultValue={group.name}
-                    className={inputClasses}
-                  />
-                )}
-              </Field>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-end">
+                <Field
+                  label="Subcategory name"
+                  error={state?.fieldErrors?.name}
+                  hint={subcategoryPath(category, group.slug)}
+                >
+                  {(props) => (
+                    <input
+                      {...props}
+                      name="name"
+                      required
+                      minLength={SUBCATEGORY_LIMITS.nameMin}
+                      maxLength={SUBCATEGORY_LIMITS.nameMax}
+                      defaultValue={group.name}
+                      className={inputClasses}
+                    />
+                  )}
+                </Field>
+                <SubcategoryIconUpload
+                  csrf={csrf}
+                  defaultId={group.iconMediaId}
+                  defaultSrc={group.iconSrc}
+                  altText={group.name}
+                />
+              </div>
               <Field label="Description" error={state?.fieldErrors?.description}>
                 {(props) => (
                   <textarea
@@ -318,7 +327,7 @@ function CategoryPanel({ csrf, section }: { csrf: string; section: Section }) {
                 </Field>
                 <div>
                   <SubmitButton size="sm" pendingLabel="Saving…">
-                    Save description
+                    Save category
                   </SubmitButton>
                 </div>
               </>
@@ -336,19 +345,27 @@ function CategoryPanel({ csrf, section }: { csrf: string; section: Section }) {
             <>
               <input type="hidden" name="category" value={section.slug} />
               <h3 className={cardHeadingClasses}>Add a subcategory to {section.name}</h3>
-              <Field label="Subcategory name" error={state?.fieldErrors?.name}>
-                {(props) => (
-                  <input
-                    {...props}
-                    name="name"
-                    required
-                    minLength={SUBCATEGORY_LIMITS.nameMin}
-                    maxLength={SUBCATEGORY_LIMITS.nameMax}
-                    autoComplete="off"
-                    className={inputClasses}
-                  />
-                )}
-              </Field>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem] sm:items-end">
+                <Field label="Subcategory name" error={state?.fieldErrors?.name}>
+                  {(props) => (
+                    <input
+                      {...props}
+                      name="name"
+                      required
+                      minLength={SUBCATEGORY_LIMITS.nameMin}
+                      maxLength={SUBCATEGORY_LIMITS.nameMax}
+                      autoComplete="off"
+                      className={inputClasses}
+                    />
+                  )}
+                </Field>
+                <SubcategoryIconUpload
+                  csrf={csrf}
+                  defaultId={null}
+                  defaultSrc={null}
+                  altText={`${section.name} subcategory`}
+                />
+              </div>
               <Field label="Description" error={state?.fieldErrors?.description}>
                 {(props) => (
                   <textarea

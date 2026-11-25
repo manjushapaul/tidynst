@@ -1,9 +1,10 @@
 import "server-only";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
-import { guideRevisions, guides, subcategoryGroups, subcategories } from "@/db/schema";
+import { guideRevisions, guides, mediaAssets, subcategoryGroups, subcategories } from "@/db/schema";
 import type { Db } from "@/db/types";
 import { subcategoryPath, type CategorySlug } from "@/content/categories";
+import { mediaPath } from "@/server/public-content";
 import {
   SUBCATEGORY_LIMITS,
   createGroupSchema,
@@ -31,6 +32,7 @@ export type PublicSubcategoryGroup = {
   slug: string;
   name: string;
   description: string;
+  iconSrc: string | null;
   subcategories: { id: string; slug: string; name: string }[];
 };
 
@@ -39,6 +41,7 @@ export type PublicGroup = {
   slug: string;
   name: string;
   description: string;
+  iconSrc: string | null;
   category: CategorySlug;
 };
 
@@ -53,7 +56,7 @@ export type PublicSubcategory = {
   groupDescription: string;
 };
 
-export type AdminSubcategoryGroup = PublicSubcategoryGroup & { category: CategorySlug };
+export type AdminSubcategoryGroup = PublicSubcategoryGroup & { category: CategorySlug; iconMediaId: string | null };
 
 function assertManager(actor: Actor) {
   if (!can(actor, "site.manage")) throw new AuthorizationError();
@@ -124,8 +127,11 @@ export async function listPublicGroups(db: Db, category: CategorySlug): Promise<
       slug: subcategoryGroups.slug,
       name: subcategoryGroups.name,
       description: subcategoryGroups.description,
+      iconMediaId: subcategoryGroups.iconMediaId,
+      iconFilename: mediaAssets.filename,
     })
     .from(subcategoryGroups)
+    .leftJoin(mediaAssets, eq(subcategoryGroups.iconMediaId, mediaAssets.id))
     .where(eq(subcategoryGroups.category, category))
     .orderBy(asc(subcategoryGroups.position), asc(subcategoryGroups.name));
   if (groups.length === 0) return [];
@@ -140,7 +146,11 @@ export async function listPublicGroups(db: Db, category: CategorySlug): Promise<
     .where(eq(subcategories.category, category))
     .orderBy(asc(subcategories.position), asc(subcategories.name));
   return groups.map((group) => ({
-    ...group,
+    id: group.id,
+    slug: group.slug,
+    name: group.name,
+    description: group.description,
+    iconSrc: group.iconMediaId && group.iconFilename ? mediaPath(group.iconMediaId, group.iconFilename) : null,
     subcategories: items
       .filter((item) => item.groupId === group.id)
       .map(({ id, slug, name }) => ({ id, slug, name })),
@@ -182,12 +192,24 @@ export async function getPublicGroup(
       slug: subcategoryGroups.slug,
       name: subcategoryGroups.name,
       description: subcategoryGroups.description,
+      iconMediaId: subcategoryGroups.iconMediaId,
+      iconFilename: mediaAssets.filename,
       category: subcategoryGroups.category,
     })
     .from(subcategoryGroups)
+    .leftJoin(mediaAssets, eq(subcategoryGroups.iconMediaId, mediaAssets.id))
     .where(and(eq(subcategoryGroups.category, category), eq(subcategoryGroups.slug, slug)))
     .limit(1);
-  return row ?? null;
+  return row
+    ? {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        description: row.description,
+        category: row.category,
+        iconSrc: row.iconMediaId && row.iconFilename ? mediaPath(row.iconMediaId, row.iconFilename) : null,
+      }
+    : null;
 }
 
 /** First two subcategory names in each category, for the homepage room cards. */
@@ -308,8 +330,11 @@ export async function listAdminGroups(db: Db): Promise<AdminSubcategoryGroup[]> 
       slug: subcategoryGroups.slug,
       name: subcategoryGroups.name,
       description: subcategoryGroups.description,
+      iconMediaId: subcategoryGroups.iconMediaId,
+      iconFilename: mediaAssets.filename,
     })
     .from(subcategoryGroups)
+    .leftJoin(mediaAssets, eq(subcategoryGroups.iconMediaId, mediaAssets.id))
     .orderBy(asc(subcategoryGroups.category), asc(subcategoryGroups.position), asc(subcategoryGroups.name));
   const items = await db
     .select({
@@ -321,7 +346,13 @@ export async function listAdminGroups(db: Db): Promise<AdminSubcategoryGroup[]> 
     .from(subcategories)
     .orderBy(asc(subcategories.position), asc(subcategories.name));
   return groups.map((group) => ({
-    ...group,
+    id: group.id,
+    category: group.category,
+    slug: group.slug,
+    name: group.name,
+    description: group.description,
+    iconMediaId: group.iconMediaId,
+    iconSrc: group.iconMediaId && group.iconFilename ? mediaPath(group.iconMediaId, group.iconFilename) : null,
     subcategories: items
       .filter((item) => item.groupId === group.id)
       .map(({ id, slug, name }) => ({ id, slug, name })),
@@ -359,6 +390,14 @@ export async function createGroup(db: Db, actor: Actor, raw: unknown): Promise<{
         throw new SubcategoryFormError("That address is already in use. Choose a different name.", {
           name: "That address is already in use.",
         });
+      }
+      if (content.iconMediaId) {
+        const [asset] = await tx
+          .select({ id: mediaAssets.id })
+          .from(mediaAssets)
+          .where(eq(mediaAssets.id, content.iconMediaId))
+          .limit(1);
+        if (!asset) throw new SubcategoryFormError("Upload a valid subcategory image icon.");
       }
       const position = await nextGroupPosition(tx, content.category);
       const [created] = await tx
@@ -409,6 +448,14 @@ export async function updateGroup(db: Db, actor: Actor, id: string, raw: unknown
         .where(eq(subcategoryGroups.id, groupId))
         .limit(1);
       if (!existing) throw new UserInputError("Section not found.");
+      if (parsed.data.iconMediaId) {
+        const [asset] = await tx
+          .select({ id: mediaAssets.id })
+          .from(mediaAssets)
+          .where(eq(mediaAssets.id, parsed.data.iconMediaId))
+          .limit(1);
+        if (!asset) throw new SubcategoryFormError("Upload a valid subcategory image icon.");
+      }
       await tx
         .update(subcategoryGroups)
         .set({ ...parsed.data, updatedAt: new Date() })

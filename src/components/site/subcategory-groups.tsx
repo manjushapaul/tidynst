@@ -28,7 +28,7 @@ export function SubcategoryGroups({
               href={subcategoryPath(category, group.slug)}
               className={`group flex min-h-[76px] items-center gap-3 rounded-xl border border-line p-3 shadow-(--shadow-card) transition-[background-color,border-color,box-shadow,transform] duration-300 ease-(--ease-gentle) hover:-translate-y-0.5 hover:border-oak/35 hover:shadow-(--shadow-card-hover) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-oak ${CARD_TINTS[index % CARD_TINTS.length]}`}
             >
-              <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-oak-pale">
+              <span className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-xl">
                 {group.iconSrc ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={group.iconSrc} alt="" className="size-[45px] object-contain" />

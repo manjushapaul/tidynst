@@ -62,7 +62,7 @@ describe("article editor topics", () => {
 });
 
 describe("article image size guidance", () => {
-  it("shows the recommended size under Add images and links it to the button", () => {
+  it("shows the recommended size under Insert images and links it to the button", () => {
     const markup = renderToStaticMarkup(
       createElement(GuideEditor, {
         csrf: "token",
@@ -77,18 +77,34 @@ describe("article image size guidance", () => {
         canDeleteMedia: false,
       }),
     );
-    const button =
-      /<button[^>]*aria-describedby="([^"]+)"[^>]*>Add images<\/button><p id="([^"]+)"[^>]*>([^<]+)<\/p>/.exec(
-        markup,
-      );
-    expect(button?.[1]).toBe(button?.[2]);
-    expect(button?.[3]).toBe("Recommended size: 350 × 400 px (portrait).");
+    const button = /<button[^>]*aria-describedby="([^"]+)"[^>]*>Insert images<\/button>/.exec(markup);
+    const hint = /<p id="([^"]+)"[^>]*>Recommended size: 350 × 400 px \(portrait\)\.<\/p>/.exec(markup);
+    expect(button?.[1]).toBe(hint?.[1]);
     const featured =
       /<button[^>]*aria-describedby="([^"]+)"[^>]*>Choose featured image<\/button><p id="([^"]+)"[^>]*>([^<]+)<\/p>/.exec(
         markup,
       );
     expect(featured?.[1]).toBe(featured?.[2]);
     expect(featured?.[3]).toBe("Recommended size: 2176 × 934 px (21:9 landscape).");
+  });
+
+  it("keeps the saved Markdown body unchanged when an editor form is opened", () => {
+    const body = "## Existing heading\n\n**Bold** with [a link](https://example.com).\n\n- One\n- Two";
+    const markup = renderToStaticMarkup(
+      createElement(GuideEditor, {
+        csrf: "token",
+        action: async () => null,
+        mode: "edit",
+        initial: guideContent({ body }),
+        version: 1,
+        everPublished: true,
+        topics: [],
+        products: [],
+        media: [],
+        canDeleteMedia: false,
+      }),
+    );
+    expect(markup).toContain(`<input type="hidden" name="body" value="${body}"`);
   });
 });
 

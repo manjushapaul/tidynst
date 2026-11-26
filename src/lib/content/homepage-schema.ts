@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATEGORY_SLUGS, categories, type CategorySlug } from "@/content/categories";
+import { CMS_ICON_KEYS } from "@/lib/content/icons";
 import { site } from "@/lib/site";
 
 export const HOMEPAGE_ID = "site";
@@ -72,6 +73,7 @@ const categorySchema = z
       )
       .max(HOMEPAGE_LIMITS.coversMax, `Use at most ${HOMEPAGE_LIMITS.coversMax} lines.`),
     imageMediaId: optionalMediaId,
+    icon: z.enum(CMS_ICON_KEYS).nullable().optional().default(null),
   })
   .strict();
 
@@ -202,6 +204,7 @@ export const HOMEPAGE_DEFAULTS: HomepageContent = {
     intro: category.intro,
     covers: [...category.covers],
     imageMediaId: null,
+    icon: null,
   })),
 };
 

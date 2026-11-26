@@ -25,6 +25,26 @@ const B = {
 const render = (markdown: string) => renderToStaticMarkup(createElement(MarkdownContent, { markdown }));
 
 describe("body image markdown", () => {
+  it("renders saved multi-image layout blocks with safe alt text and captions", () => {
+    const block = {
+      layout: "side-by-side",
+      side: "left",
+      text: "",
+      images: [
+        { src: A.src, alt: A.altText, caption: "Shelf" },
+        { src: B.src, alt: B.altText, caption: "Jars" },
+      ],
+    };
+    const markup = render(
+      ["```tidynest-images", encodeURIComponent(JSON.stringify(block)), "```"].join("\n"),
+    );
+    expect(markup).toContain('class="article-image-layout article-image-layout--side-by-side"');
+    expect(markup).toContain('alt="Open shelf above the sink"');
+    expect(markup).toContain("<figcaption>Shelf</figcaption>");
+    expect(markup).toContain('alt="Labelled jars in a drawer"');
+    expect(markup).toContain("<figcaption>Jars</figcaption>");
+  });
+
   it("writes the caption as the image title and keeps it on one line", () => {
     expect(imageMarkdown(A)).toBe(`![Open shelf above the sink](${A.src})`);
     expect(imageMarkdown(A, "  Shelves\n keep  spices close ")).toBe(
@@ -83,6 +103,30 @@ describe("removing a deleted image from the body", () => {
   it("leaves a body that does not use the image unchanged", () => {
     const body = `Text with a hard break  \nnext line\n\n\n![Other](/media/${kept}/other.png)`;
     expect(removeMediaFromBody(body, gone)).toBe(body);
+  });
+
+  it("keeps rich image blocks and their remaining image metadata when a media asset is deleted", () => {
+    const block = {
+      layout: "gallery",
+      side: "left",
+      text: "",
+      images: [
+        { src: `/media/${gone}/gone.png`, alt: "Missing photo", caption: "Remove this" },
+        { src: `/media/${kept}/kept.png`, alt: "Kept photo", caption: "Keep this" },
+      ],
+    };
+    const body = [
+      "## Shelf",
+      "",
+      "```tidynest-images",
+      encodeURIComponent(JSON.stringify(block)),
+      "```",
+    ].join("\n");
+    const updated = removeMediaFromBody(body, gone);
+    expect(bodyMediaIds(updated)).toEqual([kept]);
+    const encoded = /```tidynest-images\n([^\n]+)\n```/.exec(updated)?.[1];
+    const remaining = JSON.parse(decodeURIComponent(encoded ?? "{}")) as typeof block;
+    expect(remaining.images).toEqual([block.images[1]]);
   });
 });
 

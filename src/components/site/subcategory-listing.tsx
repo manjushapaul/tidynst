@@ -56,24 +56,23 @@ export function SubcategoryListing({
         ]}
       >
         {topics.length ? (
-          <nav className="mt-8" aria-labelledby="subcategory-topics-heading">
-            <h2
-              id="subcategory-topics-heading"
-              className="flex items-center gap-3 font-sans text-[calc(0.7rem*var(--text-scale))] font-semibold tracking-[0.16em] text-oak uppercase"
-            >
-              Topics covered
-              <span aria-hidden="true" className="h-px w-12 bg-oak/25" />
+          <nav
+            className="mt-7 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:gap-5"
+            aria-labelledby="subcategory-topics-heading"
+          >
+            <h2 id="subcategory-topics-heading" className="eyebrow shrink-0">
+              Topics
             </h2>
-            <ul className="mt-4 flex flex-wrap gap-2.5">
+            <ul className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-2.5">
               {tabs.map((tab) => (
                 <li key={tab.key}>
                   <Link
                     href={tab.href}
                     scroll={false}
                     aria-current={tab.active ? "page" : undefined}
-                    className="topic-chip"
+                    className="topic-chip w-full justify-center text-center sm:w-auto"
                   >
-                    {tab.name}
+                    {tab.key === "all" ? "All guides" : tab.name}
                   </Link>
                 </li>
               ))}

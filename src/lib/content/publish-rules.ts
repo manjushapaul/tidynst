@@ -35,7 +35,34 @@ export function bodyMediaIds(body: string): string[] {
     const match = MEDIA_LINK.exec(link.url);
     if (match?.[1]) ids.add(match[1].toLowerCase());
   }
+  // Rich editor image layouts are stored as URI-encoded JSON inside a fenced Markdown block.
+  // Keep media authorization, retention and publishing checks aware of those asset references.
+  for (const match of body.matchAll(/```tidynest-images\s*\n([^\n]+)\n```/g)) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(match[1]!)) as { images?: Array<{ src?: unknown }> };
+      for (const image of parsed.images ?? []) {
+        if (typeof image.src !== "string") continue;
+        const media = MEDIA_LINK.exec(image.src);
+        if (media?.[1]) ids.add(media[1].toLowerCase());
+      }
+    } catch {
+      // Invalid blocks are ignored here and remain visible as an editor validation issue.
+    }
+  }
   return [...ids];
+}
+
+function structuredImageBlocks(body: string) {
+  return [...body.matchAll(/```tidynest-images\s*\n([^\n]+)\n```/g)].flatMap((match) => {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(match[1]!)) as {
+        images?: Array<{ src?: unknown; alt?: unknown }>;
+      };
+      return parsed.images ?? [];
+    } catch {
+      return [];
+    }
+  });
 }
 
 /**
@@ -109,6 +136,15 @@ export function publishIssues(content: GuideContent, context: PublishContext): P
     }
     if (link.image && !link.text.trim()) {
       add("body", `Every image in the body needs alt text (${link.url}).`);
+    }
+  }
+
+  for (const image of structuredImageBlocks(content.body)) {
+    if (typeof image.alt !== "string" || !image.alt.trim()) {
+      add("body", "Every image in the body needs alt text.");
+    }
+    if (typeof image.src !== "string" || !MEDIA_LINK.test(image.src)) {
+      add("body", "Article image blocks must use an image from the media library.");
     }
   }
 

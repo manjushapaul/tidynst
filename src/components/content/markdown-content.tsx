@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { isValidElement, type CSSProperties, type ReactElement } from "react";
 import Link from "next/link";
 import ReactMarkdown, { defaultUrlTransform, type Components, type ExtraProps } from "react-markdown";
 import rehypeSlug from "rehype-slug";
@@ -105,6 +105,67 @@ function publicComponents(imageSizes?: BodyImageSizes): Components {
           style={ownImageStyle(image.style)}
         />
       );
+    },
+    pre: ({ node: _node, children, ...props }) => {
+      const child = isValidElement(children)
+        ? (children as ReactElement<{ className?: string; children?: unknown }>)
+        : null;
+      const code = child?.props.className?.includes("language-tidynest-images") ? child.props.children : null;
+      if (typeof code === "string") {
+        try {
+          const block = JSON.parse(decodeURIComponent(code.trim())) as {
+            layout?: string;
+            side?: string;
+            text?: string;
+            images?: Array<{ src?: unknown; alt?: unknown; caption?: unknown }>;
+          };
+          const images = (block.images ?? []).flatMap((item) => {
+            const image = libraryImage(item.src);
+            if (!image) return [];
+            const key = mediaFileKey(image.src);
+            const size = key ? imageSizes?.[key] : undefined;
+            const caption = typeof item.caption === "string" ? item.caption : "";
+            return [
+              {
+                src: image.src,
+                alt: typeof item.alt === "string" ? item.alt : "",
+                caption,
+                style: ownImageStyle(image.style),
+                width: size?.width,
+                height: size?.height,
+              },
+            ];
+          });
+          if (!images.length) return null;
+          const layout = block.layout ?? "full";
+          return (
+            <div
+              className={`article-image-layout article-image-layout--${layout}`}
+              data-side={block.side === "right" ? "right" : "left"}
+            >
+              {images.map((image, index) => (
+                <figure key={`${image.src}-${index}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.src}
+                    alt={image.alt}
+                    width={image.width}
+                    height={image.height}
+                    loading="lazy"
+                    decoding="async"
+                    style={image.style}
+                  />
+                  {image.caption ? <figcaption>{image.caption}</figcaption> : null}
+                </figure>
+              ))}
+              {layout === "with-text" ? <p>{block.text}</p> : null}
+            </div>
+          );
+        } catch {
+          return null;
+        }
+      }
+      return <pre {...props}>{children}</pre>;
     },
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { categories } from "@/content/categories";
 import type { GuideFaq } from "@/db/schema";
@@ -21,7 +21,8 @@ import { FeaturedImagePicker } from "./featured-image-picker";
 import { FeaturedImageStyleEditor } from "./featured-image-style-editor";
 import type { LinkTargets } from "@/lib/content/link-targets";
 import { MarkdownEditor } from "./markdown-editor";
-import { MediaPicker, type PickerAsset } from "./media-picker";
+import type { PickerAsset } from "./media-picker";
+import { RichArticleEditor } from "./rich-article-editor";
 
 type EditorState = {
   ok: boolean;
@@ -123,7 +124,6 @@ export function GuideEditor({
   const [version, setVersion] = useState(initialVersion);
   const [productToAdd, setProductToAdd] = useState("");
   const [library, setLibrary] = useState(media);
-  const insertRef = useRef<((snippet: string, options?: { block?: boolean }) => void) | null>(null);
   const categoryRef = useControlledSelect(category, state);
   const subcategoryRef = useControlledSelect(subcategoryGroupId, state);
   const topicRef = useControlledSelect(subcategoryId, state);
@@ -275,6 +275,7 @@ export function GuideEditor({
       <input type="hidden" name="articleImageStyle" value={JSON.stringify(articleImageStyle)} />
       <input type="hidden" name="featuredImageStyle" value={JSON.stringify(featuredImageStyle)} />
       <input type="hidden" name="featuredImageId" value={featuredImageId} />
+      <input type="hidden" name="body" value={body} />
       {topicIds.map((topicId) => (
         <input key={topicId} type="hidden" name="topicIds" value={topicId} />
       ))}
@@ -446,33 +447,20 @@ export function GuideEditor({
       </div>
 
       <section aria-labelledby="body-heading">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <h2 id="body-heading" className="font-sans text-sm font-semibold tracking-normal">
-            Body
-          </h2>
-          <MediaPicker
-            csrf={csrf}
-            media={library}
-            onUploaded={addToLibrary}
-            onInsert={(markdown) => insertRef.current?.(markdown, { block: true })}
-            canDelete={canDeleteMedia}
-            usedIds={usedMediaIds}
-            onDeleted={removeDeletedImage}
-            imageStyles={articleImageStyle}
-          />
-        </div>
+        <h2 id="body-heading" className="mb-2 font-sans text-sm font-semibold tracking-normal">
+          Body
+        </h2>
         {errors.body ? (
           <p role="alert" className="mb-2 text-xs font-medium text-danger">
             {errors.body}
           </p>
         ) : null}
-        <MarkdownEditor
-          id="guide-body"
+        <RichArticleEditor
           value={body}
           onChange={setBody}
+          csrf={csrf}
+          onUploaded={addToLibrary}
           invalid={Boolean(errors.body)}
-          insertRef={insertRef}
-          imageStyles={articleImageStyle}
           linkTargets={linkTargets}
         />
         {errors.articleImageStyle ? (

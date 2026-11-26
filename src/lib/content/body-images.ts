@@ -123,8 +123,19 @@ export function removeMediaFromBody(body: string, mediaId: string): string {
     .replace(/\[([^\]\n]*)\]\(([^)\s]+)(?:\s+"[^"\n]*")?\)/g, (match, text: string, url: string) =>
       target(url) ? text : match,
     );
-  if (without === body) return body;
-  return without
+  const withBlocks = without.replace(/```tidynest-images\s*\n([^\n]+)\n```/g, (match, encoded: string) => {
+    try {
+      const block = JSON.parse(decodeURIComponent(encoded)) as { images?: Array<{ src?: string }> };
+      const images = (block.images ?? []).filter((image) => !image.src?.toLowerCase().startsWith(path));
+      if (images.length === (block.images ?? []).length) return match;
+      if (!images.length) return "";
+      return `\`\`\`tidynest-images\n${encodeURIComponent(JSON.stringify({ ...block, images }))}\n\`\`\``;
+    } catch {
+      return match;
+    }
+  });
+  if (withBlocks === body) return body;
+  return withBlocks
     .replace(/^[ \t]+$/gm, "")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/^\n+/, "")

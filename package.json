@@ -26,6 +26,12 @@
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
+    "@tiptap/extension-image": "^3.35.0",
+    "@tiptap/extension-link": "^3.35.0",
+    "@tiptap/markdown": "^3.35.0",
+    "@tiptap/pm": "^3.35.0",
+    "@tiptap/react": "^3.35.0",
+    "@tiptap/starter-kit": "^3.35.0",
     "@vercel/blob": "^2.8.2",
     "drizzle-orm": "^0.45.4",
     "github-slugger": "^2.0.0",

@@ -186,7 +186,9 @@
   transform: translateY(-2px);
   border-color: #e3cba6;
   color: #fffdf8 !important;
-  box-shadow: 0 2px 4px rgb(31 30 28 / 0.05), 0 16px 32px -18px rgb(134 100 63 / 0.45);
+  box-shadow:
+    0 2px 4px rgb(31 30 28 / 0.05),
+    0 16px 32px -18px rgb(134 100 63 / 0.45);
 }
 
 .hero-cta .cta-ocean {
@@ -239,73 +241,55 @@
   animation-name: hero-wave-cover, hero-swell;
 }
 
-/* Topic links: the hero pill with a still wave across its lower half. Hover fills it with oak. */
+/* Topic navigation uses the same quiet, tactile pills as the rest of the site. */
 .topic-chip {
-  position: relative;
-  z-index: 0;
-  isolation: isolate;
   display: inline-flex;
   align-items: center;
-  overflow: hidden;
-  padding: 0.6rem 1.05rem;
-  border: 4px solid #eadfce;
+  min-height: 2.375rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--color-line);
   border-radius: 9999px;
-  background-color: #fff;
-  background-clip: padding-box;
-  box-shadow: var(--shadow-card);
-  color: var(--color-oak-deep);
-  font-size: calc(0.7rem * var(--text-scale));
-  font-weight: 700;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: calc(0.8125rem * var(--text-scale));
+  font-weight: 600;
   line-height: 1.2;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   transition:
-    transform 600ms var(--ease-gentle),
-    box-shadow 600ms var(--ease-gentle),
-    border-color 600ms var(--ease-gentle),
-    color 600ms var(--ease-gentle);
+    transform 300ms var(--ease-gentle),
+    border-color 300ms var(--ease-gentle),
+    background-color 300ms var(--ease-gentle),
+    color 300ms var(--ease-gentle),
+    box-shadow 300ms var(--ease-gentle);
 }
 
-.topic-chip::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: var(--color-oak);
-  opacity: 0;
-  transition: opacity 600ms var(--ease-gentle);
+.topic-chip:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--color-oak) 40%, var(--color-line));
+  background: var(--color-oak-pale);
+  color: var(--color-oak-deep);
+  box-shadow: var(--shadow-card);
 }
 
-.topic-chip:hover,
 .topic-chip:focus-visible {
-  transform: translateY(-2px);
-  border-color: #e3cba6;
-  color: #fffdf8;
-  box-shadow: 0 2px 4px rgb(31 30 28 / 0.05), 0 16px 32px -18px rgb(134 100 63 / 0.45);
-}
-
-.topic-chip:hover::before,
-.topic-chip:focus-visible::before,
-.topic-chip[aria-current="page"]::before {
-  opacity: 1;
+  outline: 2px solid var(--color-oak);
+  outline-offset: 3px;
 }
 
 .topic-chip[aria-current="page"] {
-  border-color: #e3cba6;
-  color: #fffdf8;
+  border-color: var(--color-oak);
+  background: var(--color-oak);
+  color: var(--color-surface);
+  box-shadow: 0 6px 16px -8px rgb(106 78 51 / 0.55);
 }
 
+.topic-chip[aria-current="page"]:hover {
+  background: var(--color-oak-deep);
+  color: var(--color-surface);
+}
+
+.topic-chip::before,
 .topic-chip::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: -2;
-  height: 58%;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 198' preserveAspectRatio='none'%3E%3Cpath fill='%23ecdcc2' d='M.005 121C311 121 409.898-.25 811 0c400 0 500 121 789 121v77H0s.005-48 .005-77z' transform='matrix(-1 0 0 1 1600 0)'/%3E%3C/svg%3E");
-  background-repeat: repeat-x;
-  background-size: 5.5rem 100%;
+  content: none;
 }
 
 @keyframes hero-wave {
@@ -816,6 +800,68 @@
   }
 }
 
+/* Explicit image layouts saved by the visual article editor. */
+.article-image-layout {
+  display: grid;
+  gap: 1rem;
+  margin-block: 2rem;
+  align-items: start;
+}
+
+.article-image-layout figure {
+  min-width: 0;
+  margin: 0;
+}
+
+.article-image-layout img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.article-image-layout figcaption {
+  margin-top: 0.6rem;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.article-image-layout--side-by-side,
+.article-image-layout--gallery {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.article-image-layout--gallery:has(figure:nth-child(3)) {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.article-image-layout--with-text {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.article-image-layout--with-text[data-side="right"] figure {
+  order: 2;
+}
+
+.article-image-layout--with-text p {
+  margin: 0;
+}
+
+@media (width < 48rem) {
+  .article-image-layout--side-by-side,
+  .article-image-layout--gallery,
+  .article-image-layout--gallery:has(figure:nth-child(3)),
+  .article-image-layout--with-text {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .article-image-layout--with-text[data-side="right"] figure {
+    order: 0;
+  }
+}
 
 @media (width < 1024px) {
   .home-hero {

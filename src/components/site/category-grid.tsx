@@ -3,6 +3,7 @@ import Link from "next/link";
 import { categoryPath } from "@/content/categories";
 import type { PublicCategory } from "@/server/homepage";
 import { CategoryIcon, CategoryIllustration, hasCategoryIllustration } from "./category-icon";
+import { CmsIcon } from "./cms-icon";
 
 export function CategoryGrid({
   categories,
@@ -35,6 +36,10 @@ export function CategoryGrid({
                   height={category.image.height}
                   className="relative max-h-32 w-auto object-contain drop-shadow-[0_10px_18px_rgb(106_78_51/0.18)] max-[500px]:max-w-full transition-transform duration-500 ease-(--ease-gentle) group-hover:-translate-y-1 group-hover:scale-[1.04]"
                 />
+              ) : category.icon ? (
+                <span className="relative inline-flex size-16 items-center justify-center rounded-full bg-surface text-oak-deep shadow-(--shadow-card)">
+                  <CmsIcon icon={category.icon} className="size-8" />
+                </span>
               ) : hasCategoryIllustration(category.slug) ? (
                 <CategoryIllustration
                   slug={category.slug}
